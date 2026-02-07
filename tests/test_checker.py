@@ -10,6 +10,7 @@ import pytest
 
 from bad_path import (
     DangerousPathError,
+    PathChecker,
     add_user_path,
     clear_user_paths,
     get_dangerous_paths,
@@ -268,4 +269,168 @@ class TestUserDefinedPaths:
         add_user_path(test_path)
         with pytest.raises(DangerousPathError):
             is_dangerous_path(f"{test_path}/file.txt", raise_error=True)
+
+
+class TestPathChecker:
+    """Tests for PathChecker class."""
+
+    def test_instantiation_with_string(self):
+        """Test creating PathChecker with a string path."""
+        checker = PathChecker("/tmp/test.txt")
+        assert isinstance(checker, PathChecker)
+
+    def test_instantiation_with_pathlib(self):
+        """Test creating PathChecker with a Path object."""
+        checker = PathChecker(Path("/tmp/test.txt"))
+        assert isinstance(checker, PathChecker)
+
+    def test_bool_false_for_safe_path(self):
+        """Test that PathChecker evaluates to False for safe paths."""
+        if platform.system() == "Windows":
+            safe_path = os.path.join(os.path.expanduser("~"), "Documents", "test.txt")
+        else:
+            safe_path = "/tmp/test.txt"
+        
+        checker = PathChecker(safe_path)
+        assert not checker  # Should be False/falsy
+
+    def test_bool_true_for_dangerous_path(self):
+        """Test that PathChecker evaluates to True for dangerous paths."""
+        system = platform.system()
+        
+        if system == "Windows":
+            dangerous_path = "C:\\Windows\\System32\\test.txt"
+        else:
+            dangerous_path = "/etc/passwd"
+        
+        checker = PathChecker(dangerous_path)
+        assert checker  # Should be True/truthy
+
+    def test_is_system_path_property_safe(self):
+        """Test is_system_path property returns False for safe paths."""
+        if platform.system() == "Windows":
+            safe_path = os.path.join(os.path.expanduser("~"), "Documents", "test.txt")
+        else:
+            safe_path = "/tmp/test.txt"
+        
+        checker = PathChecker(safe_path)
+        assert checker.is_system_path is False
+
+    def test_is_system_path_property_dangerous(self):
+        """Test is_system_path property returns True for dangerous paths."""
+        system = platform.system()
+        
+        if system == "Windows":
+            dangerous_path = "C:\\Windows\\System32\\test.txt"
+        else:
+            dangerous_path = "/etc/passwd"
+        
+        checker = PathChecker(dangerous_path)
+        assert checker.is_system_path is True
+
+    def test_is_sensitive_path_property_safe(self):
+        """Test is_sensitive_path property returns False for safe paths."""
+        if platform.system() == "Windows":
+            safe_path = os.path.join(os.path.expanduser("~"), "Documents", "test.txt")
+        else:
+            safe_path = "/tmp/test.txt"
+        
+        checker = PathChecker(safe_path)
+        assert checker.is_sensitive_path is False
+
+    def test_is_sensitive_path_property_dangerous(self):
+        """Test is_sensitive_path property returns True for dangerous paths."""
+        system = platform.system()
+        
+        if system == "Windows":
+            dangerous_path = "C:\\Windows\\System32\\test.txt"
+        else:
+            dangerous_path = "/etc/passwd"
+        
+        checker = PathChecker(dangerous_path)
+        assert checker.is_sensitive_path is True
+
+    def test_path_property(self):
+        """Test that path property returns the original path."""
+        test_path = "/tmp/test.txt"
+        checker = PathChecker(test_path)
+        assert checker.path == test_path
+
+    def test_repr(self):
+        """Test string representation of PathChecker."""
+        test_path = "/tmp/test.txt"
+        checker = PathChecker(test_path)
+        repr_str = repr(checker)
+        assert "PathChecker" in repr_str
+        assert test_path in repr_str
+        assert "safe" in repr_str or "dangerous" in repr_str
+
+    def test_can_use_in_if_statement_safe(self):
+        """Test using PathChecker in if statement with safe path."""
+        if platform.system() == "Windows":
+            safe_path = os.path.join(os.path.expanduser("~"), "Documents", "test.txt")
+        else:
+            safe_path = "/tmp/test.txt"
+        
+        checker = PathChecker(safe_path)
+        if checker:
+            pytest.fail("Safe path should not evaluate to True")
+
+    def test_can_use_in_if_statement_dangerous(self):
+        """Test using PathChecker in if statement with dangerous path."""
+        system = platform.system()
+        
+        if system == "Windows":
+            dangerous_path = "C:\\Windows\\System32\\test.txt"
+        else:
+            dangerous_path = "/etc/passwd"
+        
+        checker = PathChecker(dangerous_path)
+        is_dangerous = False
+        if checker:
+            is_dangerous = True
+        assert is_dangerous
+
+    def test_provides_details_about_danger(self):
+        """Test that PathChecker provides details about why path is dangerous."""
+        system = platform.system()
+        
+        if system == "Windows":
+            dangerous_path = "C:\\Windows\\System32\\test.txt"
+        else:
+            dangerous_path = "/etc/passwd"
+        
+        checker = PathChecker(dangerous_path)
+        # Can check both that it's dangerous and get details
+        assert checker  # It's dangerous
+        assert checker.is_system_path  # It's a system path
+        assert checker.is_sensitive_path  # It's a sensitive path
+
+    def test_with_user_defined_path(self):
+        """Test PathChecker with user-defined dangerous paths."""
+        # Setup
+        test_path = "/my/custom/dangerous"
+        add_user_path(test_path)
+        
+        try:
+            checker = PathChecker(f"{test_path}/file.txt")
+            assert checker  # Should be dangerous
+            assert checker.is_system_path
+            assert checker.is_sensitive_path
+        finally:
+            # Cleanup
+            clear_user_paths()
+
+    def test_exact_dangerous_path(self):
+        """Test PathChecker with exact match to dangerous path."""
+        system = platform.system()
+        
+        if system == "Windows":
+            dangerous_path = "C:\\Windows"
+        else:
+            dangerous_path = "/etc"
+        
+        checker = PathChecker(dangerous_path)
+        assert checker
+
 

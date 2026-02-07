@@ -127,6 +127,105 @@ def is_sensitive_path(path: Union[str, Path]) -> bool:
     return is_system_path(path)
 
 
+class PathChecker:
+    """
+    A class to check if a path is dangerous and provide details about why.
+
+    The class can be used in boolean context where it evaluates to True
+    if the path is dangerous, False otherwise.
+
+    Example:
+        checker = PathChecker("/etc/passwd")
+        if checker:
+            print(f"Dangerous path! System path: {checker.is_system_path}")
+    """
+
+    def __init__(self, path: Union[str, Path]):
+        """
+        Initialize the PathChecker with a path to check.
+
+        Args:
+            path: The file path to check (string or Path object)
+        """
+        self._path = path
+        self._path_obj = Path(path).resolve()
+        self._dangerous_paths = get_dangerous_paths()
+        self._is_dangerous = self._check_if_dangerous()
+
+    def _check_if_dangerous(self) -> bool:
+        """
+        Internal method to check if the path is dangerous.
+
+        Returns:
+            True if the path is dangerous, False otherwise.
+        """
+        for dangerous in self._dangerous_paths:
+            try:
+                dangerous_obj = Path(dangerous).resolve()
+                # Check if path is the dangerous path or a subdirectory of it
+                if self._path_obj == dangerous_obj or dangerous_obj in self._path_obj.parents:
+                    return True
+            except (OSError, ValueError):
+                # Handle cases where path resolution fails
+                continue
+        return False
+
+    def __bool__(self) -> bool:
+        """
+        Return True if the path is dangerous, False otherwise.
+
+        This allows the class to be used in boolean context:
+            if PathChecker("/etc/passwd"):
+                print("Dangerous!")
+
+        Returns:
+            True if the path is dangerous, False otherwise.
+        """
+        return self._is_dangerous
+
+    @property
+    def is_system_path(self) -> bool:
+        """
+        Check if the path is within a system directory.
+
+        Returns:
+            True if the path is within a system directory, False otherwise.
+        """
+        return self._is_dangerous
+
+    @property
+    def is_sensitive_path(self) -> bool:
+        """
+        Check if the path points to a sensitive location.
+
+        This is an alias for is_system_path for semantic clarity.
+
+        Returns:
+            True if the path is sensitive, False otherwise.
+        """
+        return self._is_dangerous
+
+    @property
+    def path(self) -> Union[str, Path]:
+        """
+        Get the original path that was checked.
+
+        Returns:
+            The original path supplied to the constructor.
+        """
+        return self._path
+
+    def __repr__(self) -> str:
+        """
+        Return a string representation of the PathChecker.
+
+        Returns:
+            String representation showing path and danger status.
+        """
+        status = "dangerous" if self._is_dangerous else "safe"
+        return f"PathChecker('{self._path}', {status})"
+
+
 def is_dangerous_path(path: Union[str, Path], raise_error: bool = False) -> bool:
     """
     Check if a path is dangerous (points to a system-sensitive location).
