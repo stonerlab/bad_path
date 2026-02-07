@@ -1,8 +1,9 @@
-"""
-bad_path: A Python package to identify potentially dangerous file paths.
+"""A Python package to identify potentially dangerous file paths.
 
 This package provides functions to test whether a supplied file path points to a
-system-sensitive location, taking into account different OS platforms.
+system-sensitive location, taking into account different OS platforms. The package
+includes platform-specific checkers for Windows, macOS (Darwin), and POSIX systems,
+along with support for user-defined sensitive paths.
 """
 
 __version__ = "0.1.0"

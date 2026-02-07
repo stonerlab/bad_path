@@ -1,5 +1,8 @@
-"""
-Darwin (macOS) dangerous/sensitive paths.
+"""Darwin (macOS) dangerous and sensitive paths.
+
+This module defines system paths and invalid characters specific to macOS (Darwin).
+It includes both POSIX-standard paths and macOS-specific directories like /System
+and /Library that should be protected.
 """
 
 # Common sensitive paths for POSIX-based systems

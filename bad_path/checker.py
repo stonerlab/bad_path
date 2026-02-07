@@ -1,5 +1,9 @@
-"""
-Core functionality for checking dangerous file paths.
+"""Core functionality for checking dangerous file paths.
+
+This module provides the main PathChecker class and supporting functions for identifying
+dangerous or sensitive file paths. It includes platform-specific implementations for
+Windows, macOS (Darwin), and POSIX systems, along with support for user-defined paths
+and validation of platform-specific invalid characters.
 """
 
 import os
@@ -24,11 +28,15 @@ _user_defined_paths: list[str] = []
 
 
 def add_user_path(path: str | Path) -> None:
-    """
-    Add a user-defined path to the list of dangerous paths.
+    """Add a user-defined path to the list of dangerous paths.
 
     Args:
-        path: The path to add (string or Path object)
+        path (str | Path):
+            The path to add as a dangerous location.
+
+    Examples:
+        >>> add_user_path("/home/user/sensitive")
+        >>> add_user_path(Path("/var/app/data"))
     """
     path_str = str(path)
     if path_str not in _user_defined_paths:
@@ -36,14 +44,19 @@ def add_user_path(path: str | Path) -> None:
 
 
 def remove_user_path(path: str | Path) -> None:
-    """
-    Remove a user-defined path from the list of dangerous paths.
+    """Remove a user-defined path from the list of dangerous paths.
 
     Args:
-        path: The path to remove (string or Path object)
+        path (str | Path):
+            The path to remove from the dangerous locations list.
 
     Raises:
-        ValueError: If the path is not in the user-defined paths list
+        ValueError:
+            If the path is not in the user-defined paths list.
+
+    Examples:
+        >>> add_user_path("/home/user/sensitive")
+        >>> remove_user_path("/home/user/sensitive")
     """
     path_str = str(path)
     if path_str in _user_defined_paths:
@@ -53,30 +66,50 @@ def remove_user_path(path: str | Path) -> None:
 
 
 def clear_user_paths() -> None:
-    """
-    Clear all user-defined dangerous paths.
+    """Clear all user-defined dangerous paths.
+
+    Examples:
+        >>> add_user_path("/home/user/sensitive")
+        >>> clear_user_paths()
+        >>> get_user_paths()
+        []
     """
     _user_defined_paths.clear()
 
 
 def get_user_paths() -> list[str]:
-    """
-    Get the list of user-defined dangerous paths.
+    """Get the list of user-defined dangerous paths.
 
     Returns:
-        List of user-defined dangerous path patterns.
+        (list[str]):
+            A copy of the list of user-defined dangerous path patterns.
+
+    Examples:
+        >>> add_user_path("/home/user/sensitive")
+        >>> paths = get_user_paths()
+        >>> "/home/user/sensitive" in paths
+        True
     """
     return _user_defined_paths.copy()
 
 
 def get_dangerous_paths() -> list[str]:
-    """
-    Get a list of dangerous/sensitive paths based on the current OS.
-    Includes both system paths and user-defined paths.
+    """Get a list of dangerous and sensitive paths based on the current OS.
+
+    Includes both platform-specific system paths and user-defined paths.
 
     Returns:
-        List of dangerous path patterns for the current operating system,
-        combined with user-defined paths (duplicates removed).
+        (list[str]):
+            List of dangerous path patterns for the current operating system,
+            combined with user-defined paths (duplicates removed).
+
+    Examples:
+        >>> paths = get_dangerous_paths()
+        >>> any("/etc" in p or "etc" in p for p in paths)  # POSIX/Darwin
+        True
+        >>> add_user_path("/custom/path")
+        >>> "/custom/path" in get_dangerous_paths()
+        True
     """
     match platform.system():
         case "Windows":
@@ -97,54 +130,89 @@ def get_dangerous_paths() -> list[str]:
 
 
 def is_system_path(path: str | Path) -> bool:
-    """
-    Check if a path is within a system directory.
+    """Check if a path is within a system directory.
 
     Args:
-        path: The file path to check (string or Path object)
+        path (str | Path):
+            The file path to check.
 
     Returns:
-        True if the path is within a system directory, False otherwise.
+        (bool):
+            True if the path is within a system directory, False otherwise.
+
+    Notes:
+        Despite the name, this function checks BOTH system paths and user-defined
+        paths for backward compatibility (originally used get_dangerous_paths() which
+        returns both). Use PathChecker class for fine-grained control.
+
+    Examples:
+        >>> is_system_path("/etc/passwd")  # On POSIX systems
+        True
+        >>> is_system_path("/home/user/file.txt")
+        False
     """
-    # Note: Despite the name, this function checks BOTH system paths and user-defined
-    # paths for backward compatibility (originally used get_dangerous_paths() which
-    # returns both). Use PathChecker class for fine-grained control.
     checker = PathChecker(path)
     return checker.is_system_path or checker.is_sensitive_path
 
 
 def is_sensitive_path(path: str | Path) -> bool:
-    """
-    Check if a path points to a sensitive location.
+    """Check if a path points to a sensitive location.
 
     This is an alias for is_system_path() for backwards compatibility
     and semantic clarity.
 
     Args:
-        path: The file path to check (string or Path object)
+        path (str | Path):
+            The file path to check.
 
     Returns:
-        True if the path is sensitive, False otherwise.
+        (bool):
+            True if the path is sensitive, False otherwise.
+
+    Notes:
+        This function checks BOTH system and user-defined paths (same as is_system_path)
+        for backward compatibility. Use PathChecker class for fine-grained control.
+
+    Examples:
+        >>> is_sensitive_path("/etc/passwd")  # On POSIX systems
+        True
+        >>> add_user_path("/custom/sensitive")
+        >>> is_sensitive_path("/custom/sensitive/file.txt")
+        True
     """
-    # This function checks BOTH system and user-defined paths (same as is_system_path)
-    # for backward compatibility. Use PathChecker class for fine-grained control.
     checker = PathChecker(path)
     return checker.is_system_path or checker.is_sensitive_path
 
 
 def is_dangerous_path(path: str | Path, raise_error: bool = False) -> bool:
-    """
-    Check if a path is dangerous (points to a system-sensitive location).
+    """Check if a path is dangerous (points to a system-sensitive location).
 
     Args:
-        path: The file path to check (string or Path object)
-        raise_error: If True, raise DangerousPathError instead of returning True
+        path (str | Path):
+            The file path to check.
+
+    Keyword Parameters:
+        raise_error (bool):
+            If True, raise DangerousPathError instead of returning True.
+            Defaults to False.
 
     Returns:
-        True if the path is dangerous, False otherwise.
+        (bool):
+            True if the path is dangerous, False otherwise.
 
     Raises:
-        DangerousPathError: If raise_error is True and the path is dangerous.
+        DangerousPathError:
+            If raise_error is True and the path is dangerous.
+
+    Examples:
+        >>> is_dangerous_path("/home/user/file.txt")
+        False
+        >>> is_dangerous_path("/etc/passwd")  # On POSIX systems
+        True
+        >>> is_dangerous_path("/etc/passwd", raise_error=True)  # doctest: +SKIP
+        Traceback (most recent call last):
+            ...
+        DangerousPathError: Path '/etc/passwd' points to a dangerous system location
     """
     try:
         checker = PathChecker(path, raise_error=raise_error)
@@ -163,35 +231,55 @@ def is_dangerous_path(path: str | Path, raise_error: bool = False) -> bool:
 
 
 class BasePathChecker(ABC):
-    """
-    Base class for platform-specific path checkers.
+    """Base class for platform-specific path checkers.
 
     A class to check if a path is dangerous and provide details about why.
-
     The class can be used in boolean context where it evaluates to True
     if the path is safe (not dangerous), False otherwise.
 
     The class distinguishes between platform-specific system paths and
     user-defined sensitive paths through separate properties.
 
-    Example:
-        checker = PathChecker("/etc/passwd")
-        if not checker:
-            print(f"Dangerous path! System path: {checker.is_system_path}")
-            print(f"User-defined: {checker.is_sensitive_path}")
+    Args:
+        path (str | Path):
+            The file path to check.
+
+    Keyword Parameters:
+        raise_error (bool):
+            If True, raise DangerousPathError if the path is dangerous.
+            Defaults to False.
+
+    Raises:
+        DangerousPathError:
+            If raise_error is True and the path is dangerous.
+
+    Attributes:
+        is_system_path (bool):
+            True if the path is within a platform system directory.
+        is_sensitive_path (bool):
+            True if the path matches a user-defined sensitive location.
+        has_invalid_chars (bool):
+            True if the path contains invalid characters for the platform.
+        is_readable (bool):
+            True if the path exists and is readable.
+        is_writable (bool):
+            True if the path exists and is writable.
+        is_creatable (bool):
+            True if the path doesn't exist and can be created.
+        path (str | Path):
+            The original path that was checked.
+
+    Examples:
+        >>> checker = PathChecker("/etc/passwd")  # doctest: +SKIP
+        >>> if not checker:
+        ...     print(f"Dangerous path! System path: {checker.is_system_path}")
+        ...     print(f"User-defined: {checker.is_sensitive_path}")
+        Dangerous path! System path: True
+        User-defined: False
     """
 
     def __init__(self, path: str | Path, raise_error: bool = False):
-        """
-        Initialize the PathChecker with a path to check.
-
-        Args:
-            path: The file path to check (string or Path object)
-            raise_error: If True, raise DangerousPathError if the path is dangerous
-
-        Raises:
-            DangerousPathError: If raise_error is True and the path is dangerous.
-        """
+        """Initialise the PathChecker with a path to check."""
         self._path = path
         self._raise_error = raise_error
 
@@ -222,32 +310,29 @@ class BasePathChecker(ABC):
 
     @abstractmethod
     def _load_invalid_chars(self) -> None:
-        """
-        Load platform-specific invalid characters and reserved names.
-
-        This method must be implemented by platform-specific subclasses.
-        """
+        """Load platform-specific invalid characters and reserved names."""
         pass
 
     @abstractmethod
     def _load_and_check_paths(self) -> None:
-        """
-        Load system and user paths, then check the current path against them.
-
-        This method must be implemented by platform-specific subclasses.
-        """
+        """Load system and user paths, then check the current path against them."""
         pass
 
     def _check_against_paths(self, paths: list[str], path_obj: Path | None = None) -> bool:
-        """
-        Internal method to check if a path matches any in the given list.
+        """Check if a path matches any in the given list.
 
         Args:
-            paths: List of paths to check against
-            path_obj: Optional Path object to check. If not provided, uses self._path_obj
+            paths (list[str]):
+                List of paths to check against.
+
+        Keyword Parameters:
+            path_obj (Path | None):
+                Optional Path object to check. If not provided, uses self._path_obj.
+                Defaults to None.
 
         Returns:
-            True if the path matches any in the list, False otherwise.
+            (bool):
+                True if the path matches any in the list, False otherwise.
         """
         if path_obj is None:
             path_obj = self._path_obj
@@ -264,18 +349,20 @@ class BasePathChecker(ABC):
         return False
 
     def _check_invalid_chars(self, path_str: str | None = None) -> bool:
-        """
-        Internal method to check if a path contains invalid characters for the platform.
+        """Check if a path contains invalid characters for the platform.
 
         This base implementation checks for simple invalid character presence.
         Platform-specific subclasses (like WindowsPathChecker) may override this
         to add additional validation logic (e.g., drive letters, reserved names).
 
-        Args:
-            path_str: Optional path string to check. If not provided, uses self._path
+        Keyword Parameters:
+            path_str (str | None):
+                Optional path string to check. If not provided, uses self._path.
+                Defaults to None.
 
         Returns:
-            True if the path contains invalid characters, False otherwise.
+            (bool):
+                True if the path contains invalid characters, False otherwise.
         """
         if path_str is None:
             path_str = str(self._path)
@@ -288,32 +375,39 @@ class BasePathChecker(ABC):
         return False
 
     def __call__(self, path: str | Path | None = None, raise_error: bool = False) -> bool:
-        """
-        Check a path for danger, with optional path reload.
+        """Check a path for danger, with optional path reload.
 
         Note: Unlike the boolean context (which returns True for safe paths),
         this method returns True if the path IS dangerous.
 
-        Args:
-            path: Optional path to check. If provided, checks the new path against
-                  existing system and user paths (without reloading). If not provided,
-                  rechecks the original path against reloaded system and user paths.
-            raise_error: If True, raise DangerousPathError if the path is dangerous
+        Keyword Parameters:
+            path (str | Path | None):
+                Optional path to check. If provided, checks the new path against
+                existing system and user paths (without reloading). If not provided,
+                rechecks the original path against reloaded system and user paths.
+                Defaults to None.
+            raise_error (bool):
+                If True, raise DangerousPathError if the path is dangerous.
+                Defaults to False.
 
         Returns:
-            True if the path is dangerous, False if safe.
+            (bool):
+                True if the path is dangerous, False if safe.
 
         Raises:
-            DangerousPathError: If raise_error is True and the path is dangerous.
+            DangerousPathError:
+                If raise_error is True and the path is dangerous.
 
-        Example:
-            checker = PathChecker("/etc/passwd")
-            # Check a different path without reloading
-            is_dangerous = checker("/home/user/file.txt")
-            # Recheck original path with reloaded paths
-            is_dangerous = checker()
-            # Check with error raising
-            checker("/etc/passwd", raise_error=True)  # Raises DangerousPathError
+        Examples:
+            >>> checker = PathChecker("/home/user/file.txt")
+            >>> checker("/etc/passwd")  # Check different path  # doctest: +SKIP
+            True
+            >>> checker()  # Recheck original with reloaded paths
+            False
+            >>> checker("/etc/passwd", raise_error=True)  # doctest: +SKIP
+            Traceback (most recent call last):
+                ...
+            DangerousPathError: Path '/etc/passwd' points to a dangerous location
         """
         if path is not None:
             # Check for invalid characters first
@@ -348,79 +442,82 @@ class BasePathChecker(ABC):
             return is_dangerous
 
     def __bool__(self) -> bool:
-        """
-        Return True if the path is safe (not dangerous), False otherwise.
+        """Return True if the path is safe (not dangerous), False otherwise.
 
         A path is considered dangerous if it matches either a platform-specific
         system path, a user-defined sensitive path, or contains invalid characters.
 
-        This allows the class to be used in boolean context:
-            if PathChecker("/tmp/myfile.txt"):
-                print("Safe path!")
+        This allows the class to be used in boolean context.
 
         Returns:
-            True if the path is safe (not dangerous), False otherwise.
+            (bool):
+                True if the path is safe (not dangerous), False otherwise.
+
+        Examples:
+            >>> if PathChecker("/tmp/myfile.txt"):  # doctest: +SKIP
+            ...     print("Safe path!")
+            Safe path!
         """
         return not (self._is_system_path or self._is_user_path or self._has_invalid_chars)
 
     @property
     def is_system_path(self) -> bool:
-        """
-        Check if the path is within a platform-specific system directory.
+        """Check if the path is within a platform-specific system directory.
 
         This checks against OS-specific dangerous paths like /etc, /bin on
         Linux/Unix, C:\\Windows on Windows, or /System on macOS.
 
         Returns:
-            True if the path is within a platform system directory, False otherwise.
+            (bool):
+                True if the path is within a platform system directory, False otherwise.
         """
         return self._is_system_path
 
     @property
     def is_sensitive_path(self) -> bool:
-        """
-        Check if the path matches a user-defined sensitive location.
+        """Check if the path matches a user-defined sensitive location.
 
         This checks against paths added by the user via add_user_path().
 
         Returns:
-            True if the path matches a user-defined sensitive path, False otherwise.
+            (bool):
+                True if the path matches a user-defined sensitive path, False otherwise.
         """
         return self._is_user_path
 
     @property
     def path(self) -> str | Path:
-        """
-        Get the original path that was checked.
+        """Get the original path that was checked.
 
         Returns:
-            The original path supplied to the constructor.
+            (str | Path):
+                The original path supplied to the constructor.
         """
         return self._path
 
     @property
     def has_invalid_chars(self) -> bool:
-        """
-        Check if the path contains invalid characters for the current platform.
+        """Check if the path contains invalid characters for the current platform.
 
         This checks for platform-specific invalid characters (e.g., <, >, :, ", etc. on Windows,
         null byte on POSIX systems, colon on macOS). Also checks for reserved names on Windows.
 
         Returns:
-            True if the path contains invalid characters, False otherwise.
+            (bool):
+                True if the path contains invalid characters, False otherwise.
         """
         return self._has_invalid_chars
 
     @property
     def is_readable(self) -> bool:
-        """
-        Check if the path is accessible for read operations.
+        """Check if the path is accessible for read operations.
 
-        For existing files/directories, checks read permission.
+        For existing files and directories, checks read permission.
         For non-existing paths, returns False.
 
         Returns:
-            True if the path exists and is readable, False otherwise.
+            (bool):
+                True if the path exists and is readable, False otherwise.
         """
         try:
             # Check if path exists and is readable
@@ -430,14 +527,14 @@ class BasePathChecker(ABC):
 
     @property
     def is_writable(self) -> bool:
-        """
-        Check if the path is accessible for write operations.
+        """Check if the path is accessible for write operations.
 
-        For existing files/directories, checks write permission.
+        For existing files and directories, checks write permission.
         For non-existing paths, returns False (use is_creatable instead).
 
         Returns:
-            True if the path exists and is writable, False otherwise.
+            (bool):
+                True if the path exists and is writable, False otherwise.
         """
         try:
             # Check if path exists and is writable
@@ -447,14 +544,14 @@ class BasePathChecker(ABC):
 
     @property
     def is_creatable(self) -> bool:
-        """
-        Check if the path can be created (for non-existing paths).
+        """Check if the path can be created (for non-existing paths).
 
         For non-existing paths, checks if the parent directory exists and is writable.
         For existing paths, returns False (use is_writable instead).
 
         Returns:
-            True if the path doesn't exist and can be created, False otherwise.
+            (bool):
+                True if the path doesn't exist and can be created, False otherwise.
         """
         try:
             # If path exists, it's not creatable (it already exists)
@@ -468,11 +565,11 @@ class BasePathChecker(ABC):
             return False
 
     def __repr__(self) -> str:
-        """
-        Return a string representation of the PathChecker.
+        """Return a string representation of the PathChecker.
 
         Returns:
-            String representation showing path and safety status.
+            (str):
+                String representation showing path and safety status.
         """
         is_safe = not (self._is_system_path or self._is_user_path or self._has_invalid_chars)
         status = "safe" if is_safe else "dangerous"
@@ -485,7 +582,11 @@ class BasePathChecker(ABC):
 
 
 class WindowsPathChecker(BasePathChecker):
-    """Windows-specific PathChecker implementation."""
+    """Windows-specific PathChecker implementation.
+
+    Handles Windows-specific path validation including drive letters, reserved names,
+    and Windows-specific invalid characters.
+    """
 
     def _load_invalid_chars(self) -> None:
         """Load Windows-specific invalid characters and reserved names."""
@@ -504,13 +605,21 @@ class WindowsPathChecker(BasePathChecker):
         self._is_user_path = self._check_against_paths(self._user_paths)
 
     def _check_invalid_chars(self, path_str: str | None = None) -> bool:
-        """
-        Check for Windows-specific invalid characters.
+        """Check for Windows-specific invalid characters.
 
         Includes special handling for:
         - Drive letter colons (C:, D:, etc.)
         - Reserved names (CON, PRN, AUX, etc.)
         - Paths ending with space or period
+
+        Keyword Parameters:
+            path_str (str | None):
+                Optional path string to check. If not provided, uses self._path.
+                Defaults to None.
+
+        Returns:
+            (bool):
+                True if the path contains invalid characters, False otherwise.
         """
         if path_str is None:
             path_str = str(self._path)
@@ -554,7 +663,11 @@ class WindowsPathChecker(BasePathChecker):
 
 
 class DarwinPathChecker(BasePathChecker):
-    """Darwin (macOS)-specific PathChecker implementation."""
+    """Darwin (macOS)-specific PathChecker implementation.
+
+    Handles macOS-specific path validation including restrictions on colons
+    in file names and macOS system directories.
+    """
 
     def _load_invalid_chars(self) -> None:
         """Load Darwin-specific invalid characters."""
@@ -574,7 +687,10 @@ class DarwinPathChecker(BasePathChecker):
 
 
 class PosixPathChecker(BasePathChecker):
-    """POSIX (Linux/Unix)-specific PathChecker implementation."""
+    """POSIX (Linux and Unix)-specific PathChecker implementation.
+
+    Handles POSIX-compliant path validation for Linux and other Unix-like systems.
+    """
 
     def _load_invalid_chars(self) -> None:
         """Load POSIX-specific invalid characters."""
@@ -600,18 +716,24 @@ class PosixPathChecker(BasePathChecker):
 
 # Factory function to create the appropriate PathChecker based on platform
 def _create_path_checker(path: str | Path, raise_error: bool = False) -> BasePathChecker:
-    """
-    Create a platform-specific PathChecker instance.
+    """Create a platform-specific PathChecker instance.
 
     Args:
-        path: The file path to check (string or Path object)
-        raise_error: If True, raise DangerousPathError if the path is dangerous
+        path (str | Path):
+            The file path to check.
+
+    Keyword Parameters:
+        raise_error (bool):
+            If True, raise DangerousPathError if the path is dangerous.
+            Defaults to False.
 
     Returns:
-        A platform-specific PathChecker instance.
+        (BasePathChecker):
+            A platform-specific PathChecker instance.
 
     Raises:
-        DangerousPathError: If raise_error is True and the path is dangerous.
+        DangerousPathError:
+            If raise_error is True and the path is dangerous.
     """
     match platform.system():
         case "Windows":
@@ -624,8 +746,7 @@ def _create_path_checker(path: str | Path, raise_error: bool = False) -> BasePat
 
 # PathChecker is the public API - it's a callable class that acts as a factory
 class PathChecker:
-    """
-    A class to check if a path is dangerous and provide details about why.
+    """A class to check if a path is dangerous and provide details about why.
 
     This is a factory that creates platform-specific PathChecker instances
     based on the current operating system.
@@ -636,25 +757,44 @@ class PathChecker:
     The class distinguishes between platform-specific system paths and
     user-defined sensitive paths through separate properties.
 
-    Example:
-        checker = PathChecker("/etc/passwd")
-        if not checker:
-            print(f"Dangerous path! System path: {checker.is_system_path}")
-            print(f"User-defined: {checker.is_sensitive_path}")
+    Args:
+        path (str | Path):
+            The file path to check.
+
+    Keyword Parameters:
+        raise_error (bool):
+            If True, raise DangerousPathError if the path is dangerous.
+            Defaults to False.
+
+    Raises:
+        DangerousPathError:
+            If raise_error is True and the path is dangerous.
+
+    Attributes:
+        is_system_path (bool):
+            True if the path is within a platform system directory.
+        is_sensitive_path (bool):
+            True if the path matches a user-defined sensitive location.
+        has_invalid_chars (bool):
+            True if the path contains invalid characters for the platform.
+        is_readable (bool):
+            True if the path exists and is readable.
+        is_writable (bool):
+            True if the path exists and is writable.
+        is_creatable (bool):
+            True if the path doesn't exist and can be created.
+        path (str | Path):
+            The original path that was checked.
+
+    Examples:
+        >>> checker = PathChecker("/etc/passwd")  # doctest: +SKIP
+        >>> if not checker:
+        ...     print(f"Dangerous path! System path: {checker.is_system_path}")
+        ...     print(f"User-defined: {checker.is_sensitive_path}")
+        Dangerous path! System path: True
+        User-defined: False
     """
 
     def __new__(cls, path: str | Path, raise_error: bool = False) -> BasePathChecker:
-        """
-        Create a platform-specific PathChecker instance.
-
-        Args:
-            path: The file path to check (string or Path object)
-            raise_error: If True, raise DangerousPathError if the path is dangerous
-
-        Returns:
-            A platform-specific PathChecker instance.
-
-        Raises:
-            DangerousPathError: If raise_error is True and the path is dangerous.
-        """
+        """Create a platform-specific PathChecker instance."""
         return _create_path_checker(path, raise_error)

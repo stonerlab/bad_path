@@ -1,5 +1,8 @@
-"""
-POSIX (Linux and Unix-like systems) dangerous/sensitive paths.
+"""POSIX (Linux and Unix-like systems) dangerous and sensitive paths.
+
+This module defines system paths and invalid characters for POSIX-compliant systems.
+It includes standard Linux and Unix system directories that should be protected from
+accidental modification or deletion.
 """
 
 # Common sensitive paths across all POSIX platforms

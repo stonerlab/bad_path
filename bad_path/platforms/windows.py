@@ -1,5 +1,8 @@
-"""
-Windows dangerous/sensitive paths.
+"""Windows dangerous and sensitive paths.
+
+This module defines system paths, invalid characters, and reserved file names specific
+to Windows. It includes Windows system directories, file naming restrictions, and
+reserved device names that require special handling.
 """
 
 import os
