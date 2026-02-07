@@ -150,21 +150,52 @@ class PathChecker:
             DangerousPathError: If raise_error is True and the path is dangerous.
         """
         self._path = path
-        self._path_obj = Path(path).resolve()
         self._raise_error = raise_error
+
+        # Load platform-specific invalid characters first (before resolve)
+        self._load_invalid_chars()
+
+        # Check for invalid characters before attempting to resolve the path
+        # (some invalid chars like null byte will cause resolve to fail)
+        self._has_invalid_chars = self._check_invalid_chars()
+
+        # Try to resolve the path, but handle errors gracefully
+        try:
+            self._path_obj = Path(path).resolve()
+        except (ValueError, OSError) as e:
+            # If path contains invalid characters that prevent resolution,
+            # create a non-resolved Path object
+            self._path_obj = Path(path)
 
         # Load paths and check the initial path
         self._load_and_check_paths()
 
         # Raise error if requested and path is dangerous
-        if self._raise_error and (self._is_system_path or self._is_user_path):
+        if self._raise_error and (self._is_system_path or self._is_user_path or self._has_invalid_chars):
             raise DangerousPathError(f"Path '{path}' points to a dangerous location")
+
+    def _load_invalid_chars(self) -> None:
+        """
+        Load platform-specific invalid characters and reserved names.
+        """
+        match platform.system():
+            case "Windows":
+                from .platforms.windows import invalid_chars, reserved_names
+                self._reserved_names = reserved_names
+            case "Darwin":
+                from .platforms.darwin import invalid_chars
+                self._reserved_names = []
+            case _:  # Linux and other Unix-like systems
+                from .platforms.posix import invalid_chars
+                self._reserved_names = []
+
+        self._invalid_chars = invalid_chars
 
     def _load_and_check_paths(self) -> None:
         """
         Load system and user paths, then check the current path against them.
         """
-        # Get system paths separately from user paths
+        # Get system paths
         match platform.system():
             case "Windows":
                 from .platforms.windows import system_paths
@@ -179,6 +210,7 @@ class PathChecker:
         # Check both types
         self._is_system_path = self._check_against_paths(self._system_paths)
         self._is_user_path = self._check_against_paths(self._user_paths)
+        # Note: _has_invalid_chars is already set in __init__ before resolve
 
     def _check_against_paths(self, paths: list[str], path_obj: Path | None = None) -> bool:
         """
@@ -203,6 +235,41 @@ class PathChecker:
             except (OSError, ValueError):
                 # Handle cases where path resolution fails
                 continue
+        return False
+
+    def _check_invalid_chars(self, path_str: str | None = None) -> bool:
+        """
+        Internal method to check if a path contains invalid characters for the platform.
+
+        Args:
+            path_str: Optional path string to check. If not provided, uses self._path
+
+        Returns:
+            True if the path contains invalid characters, False otherwise.
+        """
+        if path_str is None:
+            path_str = str(self._path)
+
+        # Check for invalid characters
+        for char in self._invalid_chars:
+            if char in path_str:
+                return True
+
+        # Windows-specific checks
+        if platform.system() == "Windows":
+            # Check for reserved names (case-insensitive)
+            # Extract the filename without path and extension
+            path_obj = Path(path_str)
+            name_without_ext = path_obj.stem.upper()
+            
+            # Check if the name (without extension) is a reserved name
+            if name_without_ext in self._reserved_names:
+                return True
+            
+            # Check if path ends with space or period (invalid in Windows)
+            if path_obj.name and (path_obj.name.endswith(" ") or path_obj.name.endswith(".")):
+                return True
+
         return False
 
     def __call__(self, path: str | Path | None = None, raise_error: bool = False) -> bool:
@@ -234,14 +301,22 @@ class PathChecker:
             checker("/etc/passwd", raise_error=True)  # Raises DangerousPathError
         """
         if path is not None:
-            # Check the new path against existing paths (no reload)
-            path_obj = Path(path).resolve()
+            # Check for invalid characters first
+            has_invalid = self._check_invalid_chars(str(path))
+
+            # Try to resolve the path
+            try:
+                path_obj = Path(path).resolve()
+            except (ValueError, OSError):
+                # If path contains invalid characters that prevent resolution,
+                # create a non-resolved Path object
+                path_obj = Path(path)
 
             # Check against existing paths
             is_sys_path = self._check_against_paths(self._system_paths, path_obj)
             is_usr_path = self._check_against_paths(self._user_paths, path_obj)
 
-            is_dangerous = is_sys_path or is_usr_path
+            is_dangerous = is_sys_path or is_usr_path or has_invalid
 
             if is_dangerous and raise_error:
                 raise DangerousPathError(f"Path '{path}' points to a dangerous location")
@@ -250,7 +325,7 @@ class PathChecker:
         else:
             # Reload paths and check the original path
             self._load_and_check_paths()
-            is_dangerous = self._is_system_path or self._is_user_path
+            is_dangerous = self._is_system_path or self._is_user_path or self._has_invalid_chars
 
             if is_dangerous and raise_error:
                 raise DangerousPathError(f"Path '{self._path}' points to a dangerous location")
@@ -262,7 +337,7 @@ class PathChecker:
         Return True if the path is safe (not dangerous), False otherwise.
 
         A path is considered dangerous if it matches either a platform-specific
-        system path or a user-defined sensitive path.
+        system path, a user-defined sensitive path, or contains invalid characters.
 
         This allows the class to be used in boolean context:
             if PathChecker("/tmp/myfile.txt"):
@@ -271,7 +346,7 @@ class PathChecker:
         Returns:
             True if the path is safe (not dangerous), False otherwise.
         """
-        return not (self._is_system_path or self._is_user_path)
+        return not (self._is_system_path or self._is_user_path or self._has_invalid_chars)
 
     @property
     def is_system_path(self) -> bool:
@@ -307,6 +382,19 @@ class PathChecker:
             The original path supplied to the constructor.
         """
         return self._path
+
+    @property
+    def has_invalid_chars(self) -> bool:
+        """
+        Check if the path contains invalid characters for the current platform.
+
+        This checks for platform-specific invalid characters (e.g., <, >, :, ", etc. on Windows,
+        null byte on POSIX systems, colon on macOS). Also checks for reserved names on Windows.
+
+        Returns:
+            True if the path contains invalid characters, False otherwise.
+        """
+        return self._has_invalid_chars
 
     @property
     def is_readable(self) -> bool:
@@ -371,7 +459,7 @@ class PathChecker:
         Returns:
             String representation showing path and safety status.
         """
-        is_safe = not (self._is_system_path or self._is_user_path)
+        is_safe = not (self._is_system_path or self._is_user_path or self._has_invalid_chars)
         status = "safe" if is_safe else "dangerous"
         return f"PathChecker('{self._path}', {status})"
 

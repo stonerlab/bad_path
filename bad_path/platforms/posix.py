@@ -18,3 +18,10 @@ system_paths = [
     "/var",
     "/opt",
 ]
+
+# Invalid characters in POSIX file names
+# Note: The null byte (\0) is the only character that is strictly forbidden in POSIX file names.
+# The forward slash (/) is allowed in full paths but not within individual file name components.
+invalid_chars = [
+    "\0",  # Null byte - strictly forbidden
+]
