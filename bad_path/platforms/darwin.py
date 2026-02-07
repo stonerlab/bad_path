@@ -17,7 +17,7 @@ system_paths = common_paths + [
     "/System",
     "/Library",
     "/private/etc",  # System configuration (don't use /private to allow /private/tmp)
-    "/private/var",  # System variables/logs (but /private/var/tmp is safe)
+    "/private/var",  # System variables, logs, and caches (excludes /private/tmp which is safe)
     "/var",
     "/usr",
     "/Applications",
