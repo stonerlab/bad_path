@@ -16,11 +16,8 @@ permissions:
 
 jobs:
   build_conda:
-    name: Build conda package on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+    name: Build conda package
+    runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v4
@@ -44,7 +41,7 @@ jobs:
     - name: Upload conda package artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: conda-package-${{ matrix.os }}
+        name: conda-package
         path: dist/conda/**/*.tar.bz2
 
   upload_conda:
@@ -57,8 +54,7 @@ jobs:
     steps:
     - uses: actions/download-artifact@v4
       with:
-        pattern: conda-package-*
-        merge-multiple: true
+        name: conda-package
         path: dist/conda
 
     - name: Setup Micromamba
