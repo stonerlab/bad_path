@@ -290,19 +290,19 @@ class TestPathChecker:
             safe_path = os.path.join(os.path.expanduser("~"), "Documents", "test.txt")
         else:
             safe_path = "/tmp/test.txt"
-        
+
         checker = PathChecker(safe_path)
         assert not checker  # Should be False/falsy
 
     def test_bool_true_for_dangerous_path(self):
         """Test that PathChecker evaluates to True for dangerous paths."""
         system = platform.system()
-        
+
         if system == "Windows":
             dangerous_path = "C:\\Windows\\System32\\test.txt"
         else:
             dangerous_path = "/etc/passwd"
-        
+
         checker = PathChecker(dangerous_path)
         assert checker  # Should be True/truthy
 
@@ -312,19 +312,19 @@ class TestPathChecker:
             safe_path = os.path.join(os.path.expanduser("~"), "Documents", "test.txt")
         else:
             safe_path = "/tmp/test.txt"
-        
+
         checker = PathChecker(safe_path)
         assert checker.is_system_path is False
 
     def test_is_system_path_property_dangerous(self):
         """Test is_system_path property returns True for dangerous paths."""
         system = platform.system()
-        
+
         if system == "Windows":
             dangerous_path = "C:\\Windows\\System32\\test.txt"
         else:
             dangerous_path = "/etc/passwd"
-        
+
         checker = PathChecker(dangerous_path)
         assert checker.is_system_path is True
 
@@ -334,19 +334,19 @@ class TestPathChecker:
             safe_path = os.path.join(os.path.expanduser("~"), "Documents", "test.txt")
         else:
             safe_path = "/tmp/test.txt"
-        
+
         checker = PathChecker(safe_path)
         assert checker.is_sensitive_path is False
 
     def test_is_sensitive_path_property_dangerous(self):
         """Test is_sensitive_path property returns False for system paths."""
         system = platform.system()
-        
+
         if system == "Windows":
             dangerous_path = "C:\\Windows\\System32\\test.txt"
         else:
             dangerous_path = "/etc/passwd"
-        
+
         checker = PathChecker(dangerous_path)
         # System paths should NOT show as sensitive (user-defined)
         assert checker.is_sensitive_path is False
@@ -372,7 +372,7 @@ class TestPathChecker:
             safe_path = os.path.join(os.path.expanduser("~"), "Documents", "test.txt")
         else:
             safe_path = "/tmp/test.txt"
-        
+
         checker = PathChecker(safe_path)
         if checker:
             pytest.fail("Safe path should not evaluate to True")
@@ -380,12 +380,12 @@ class TestPathChecker:
     def test_can_use_in_if_statement_dangerous(self):
         """Test using PathChecker in if statement with dangerous path."""
         system = platform.system()
-        
+
         if system == "Windows":
             dangerous_path = "C:\\Windows\\System32\\test.txt"
         else:
             dangerous_path = "/etc/passwd"
-        
+
         checker = PathChecker(dangerous_path)
         is_dangerous = False
         if checker:
@@ -395,12 +395,12 @@ class TestPathChecker:
     def test_provides_details_about_danger(self):
         """Test that PathChecker provides details about why path is dangerous."""
         system = platform.system()
-        
+
         if system == "Windows":
             dangerous_path = "C:\\Windows\\System32\\test.txt"
         else:
             dangerous_path = "/etc/passwd"
-        
+
         checker = PathChecker(dangerous_path)
         # Can check both that it's dangerous and get details
         assert checker  # It's dangerous
@@ -412,7 +412,7 @@ class TestPathChecker:
         # Setup
         test_path = "/my/custom/dangerous"
         add_user_path(test_path)
-        
+
         try:
             checker = PathChecker(f"{test_path}/file.txt")
             assert checker  # Should be dangerous
@@ -425,36 +425,36 @@ class TestPathChecker:
     def test_exact_dangerous_path(self):
         """Test PathChecker with exact match to dangerous path."""
         system = platform.system()
-        
+
         if system == "Windows":
             dangerous_path = "C:\\Windows"
         else:
             dangerous_path = "/etc"
-        
+
         checker = PathChecker(dangerous_path)
         assert checker
 
     def test_distinction_system_vs_user_paths(self):
         """Test that is_system_path and is_sensitive_path are properly distinguished."""
         system = platform.system()
-        
+
         # Test with a system path
         if system == "Windows":
             system_path = "C:\\Windows\\System32\\test.txt"
         else:
             system_path = "/etc/passwd"
-        
+
         checker_system = PathChecker(system_path)
         assert checker_system.is_system_path is True
         assert checker_system.is_sensitive_path is False
-        
+
         # Test with a user-defined path (use platform-agnostic path)
         if system == "Windows":
             user_path = "C:\\CustomSensitive\\Data"
         else:
             user_path = "/custom/sensitive/data"
         add_user_path(user_path)
-        
+
         try:
             checker_user = PathChecker(f"{user_path}/file.txt")
             assert checker_user.is_system_path is False
@@ -465,15 +465,15 @@ class TestPathChecker:
     def test_both_system_and_user_path(self):
         """Test a path that is both a system path and user-defined."""
         system = platform.system()
-        
+
         if system == "Windows":
             path_to_add = "C:\\Windows"
         else:
             path_to_add = "/etc"
-        
+
         # Add a system path as user-defined too
         add_user_path(path_to_add)
-        
+
         try:
             checker = PathChecker(f"{path_to_add}/test.txt")
             # Should be flagged as both
@@ -486,14 +486,14 @@ class TestPathChecker:
     def test_only_user_defined_not_system(self):
         """Test that user-defined paths work for non-system locations."""
         system = platform.system()
-        
+
         # Use platform-specific non-system paths
         if system == "Windows":
             custom_path = os.path.join(os.path.expanduser("~"), "MySensitiveProject")
         else:
             custom_path = "/home/user/my_sensitive_project"
         add_user_path(custom_path)
-        
+
         try:
             checker = PathChecker(f"{custom_path}/secret.txt")
             assert checker  # Should be dangerous
@@ -509,67 +509,67 @@ class TestPathCheckerCall:
     def test_call_with_new_path_safe(self):
         """Test calling checker with a new safe path."""
         system = platform.system()
-        
+
         if system == "Windows":
             dangerous_path = "C:\\Windows\\System32\\test.txt"
             safe_path = os.path.join(os.path.expanduser("~"), "Documents", "test.txt")
         else:
             dangerous_path = "/etc/passwd"
             safe_path = "/tmp/test.txt"
-        
+
         checker = PathChecker(dangerous_path)
         assert checker  # Original path is dangerous
-        
+
         # Check a different safe path without reloading
         result = checker(safe_path)
         assert result is False  # New path is safe
-        
+
         # Original path should still be stored
         assert checker.path == dangerous_path
 
     def test_call_with_new_path_dangerous(self):
         """Test calling checker with a new dangerous path."""
         system = platform.system()
-        
+
         if system == "Windows":
             safe_path = os.path.join(os.path.expanduser("~"), "Documents", "test.txt")
             dangerous_path = "C:\\Windows\\System32\\test.txt"
         else:
             safe_path = "/tmp/test.txt"
             dangerous_path = "/etc/passwd"
-        
+
         checker = PathChecker(safe_path)
         assert not checker  # Original path is safe
-        
+
         # Check a different dangerous path without reloading
         result = checker(dangerous_path)
         assert result is True  # New path is dangerous
-        
+
         # Original path should still be stored
         assert checker.path == safe_path
 
     def test_call_without_path_reloads(self):
         """Test calling checker without path reloads system and user paths."""
         system = platform.system()
-        
+
         # Use a custom user path
         if system == "Windows":
             custom_path = "C:\\MyCustomPath"
         else:
             custom_path = "/my/custom/path"
-        
+
         # Create checker for custom path before adding it
         checker = PathChecker(f"{custom_path}/file.txt")
         assert not checker  # Not dangerous yet
-        
+
         # Add the path to user paths
         add_user_path(custom_path)
-        
+
         try:
             # Call without path should reload and recheck
             result = checker()
             assert result is True  # Should now be dangerous
-            
+
             # Properties should also be updated
             assert checker.is_sensitive_path is True
         finally:
@@ -578,7 +578,7 @@ class TestPathCheckerCall:
     def test_call_with_path_does_not_reload(self):
         """Test that calling with a path does not reload user paths."""
         system = platform.system()
-        
+
         if system == "Windows":
             test_path = "C:\\TestPath"
             check_path = "C:\\TestPath\\file.txt"
@@ -587,26 +587,26 @@ class TestPathCheckerCall:
             test_path = "/test/path"
             check_path = "/test/path/file.txt"
             safe_path = "/tmp/safe.txt"
-        
+
         # Create checker with user paths empty
         checker = PathChecker(safe_path)
         assert not checker  # Safe path
-        
+
         # Store the original user paths reference
         original_user_paths = checker._user_paths
-        
+
         try:
             # Add a user path after creating the checker
             add_user_path(test_path)
-            
+
             # Call with a path - should use existing _user_paths (not reload)
             # So it won't see the newly added path
             result = checker(check_path)
-            
+
             # The path should not be dangerous because checker didn't reload
             # and still has the old (empty) user paths
             assert result is False
-            
+
             # Verify that _user_paths wasn't reloaded
             assert checker._user_paths is original_user_paths
         finally:
@@ -615,14 +615,14 @@ class TestPathCheckerCall:
     def test_call_with_pathlib_object(self):
         """Test calling with a Path object."""
         system = platform.system()
-        
+
         if system == "Windows":
             dangerous_path = "C:\\Windows\\System32\\test.txt"
             safe_path = Path(os.path.join(os.path.expanduser("~"), "Documents", "test.txt"))
         else:
             dangerous_path = "/etc/passwd"
             safe_path = Path("/tmp/test.txt")
-        
+
         checker = PathChecker(dangerous_path)
         result = checker(safe_path)
         assert result is False
@@ -630,22 +630,22 @@ class TestPathCheckerCall:
     def test_call_preserves_original_state(self):
         """Test that calling with a path preserves the original checker state."""
         system = platform.system()
-        
+
         if system == "Windows":
             dangerous_path = "C:\\Windows\\System32\\test.txt"
             safe_path = os.path.join(os.path.expanduser("~"), "Documents", "test.txt")
         else:
             dangerous_path = "/etc/passwd"
             safe_path = "/tmp/test.txt"
-        
+
         checker = PathChecker(dangerous_path)
         original_is_system = checker.is_system_path
         original_is_sensitive = checker.is_sensitive_path
         original_bool = bool(checker)
-        
+
         # Call with a different path
         checker(safe_path)
-        
+
         # Original state should be preserved
         assert checker.is_system_path == original_is_system
         assert checker.is_sensitive_path == original_is_sensitive
@@ -655,24 +655,24 @@ class TestPathCheckerCall:
     def test_call_updates_properties_when_no_path(self):
         """Test that calling without path updates the checker properties."""
         system = platform.system()
-        
+
         if system == "Windows":
             custom_path = "C:\\CustomDangerous"
         else:
             custom_path = "/custom/dangerous"
-        
+
         # Create checker
         checker = PathChecker(f"{custom_path}/file.txt")
         assert not checker
         assert not checker.is_sensitive_path
-        
+
         # Add user path
         add_user_path(custom_path)
-        
+
         try:
             # Call without path to reload
             result = checker()
-            
+
             # Should be dangerous now
             assert result is True
             assert checker.is_sensitive_path is True
@@ -683,7 +683,7 @@ class TestPathCheckerCall:
     def test_call_with_user_defined_path(self):
         """Test calling with path checks against user-defined paths."""
         system = platform.system()
-        
+
         if system == "Windows":
             custom_path = "C:\\MySensitive"
             test_file = f"{custom_path}\\secret.txt"
@@ -692,15 +692,15 @@ class TestPathCheckerCall:
             custom_path = "/my/sensitive"
             test_file = f"{custom_path}/secret.txt"
             safe_path = "/tmp/test.txt"
-        
+
         # Add user path
         add_user_path(custom_path)
-        
+
         try:
             # Create checker with safe path
             checker = PathChecker(safe_path)
             assert not checker
-            
+
             # Check the user-defined dangerous path
             result = checker(test_file)
             assert result is True  # Should be dangerous
@@ -710,26 +710,26 @@ class TestPathCheckerCall:
     def test_constructor_raise_error_on_dangerous_system_path(self):
         """Test that raise_error=True in constructor raises exception for dangerous paths."""
         system = platform.system()
-        
+
         if system == "Windows":
             dangerous_path = "C:\\Windows\\System32\\test.txt"
         else:
             dangerous_path = "/etc/passwd"
-        
+
         with pytest.raises(DangerousPathError) as exc_info:
             PathChecker(dangerous_path, raise_error=True)
-        
+
         assert "dangerous location" in str(exc_info.value)
 
     def test_constructor_raise_error_on_dangerous_user_path(self):
         """Test that raise_error=True in constructor raises exception for user paths."""
         custom_path = "/my/custom/dangerous"
         add_user_path(custom_path)
-        
+
         try:
             with pytest.raises(DangerousPathError) as exc_info:
                 PathChecker(f"{custom_path}/file.txt", raise_error=True)
-            
+
             assert "dangerous location" in str(exc_info.value)
         finally:
             clear_user_paths()
@@ -740,7 +740,7 @@ class TestPathCheckerCall:
             safe_path = os.path.join(os.path.expanduser("~"), "Documents", "test.txt")
         else:
             safe_path = "/tmp/test.txt"
-        
+
         # Should not raise an exception
         checker = PathChecker(safe_path, raise_error=True)
         assert not checker
@@ -748,44 +748,44 @@ class TestPathCheckerCall:
     def test_call_raise_error_on_dangerous_path(self):
         """Test that raise_error=True in __call__ raises exception for dangerous paths."""
         system = platform.system()
-        
+
         if system == "Windows":
             safe_path = os.path.join(os.path.expanduser("~"), "Documents", "test.txt")
             dangerous_path = "C:\\Windows\\System32\\test.txt"
         else:
             safe_path = "/tmp/test.txt"
             dangerous_path = "/etc/passwd"
-        
+
         # Create checker with safe path
         checker = PathChecker(safe_path)
-        
+
         # Call with dangerous path and raise_error=True
         with pytest.raises(DangerousPathError) as exc_info:
             checker(dangerous_path, raise_error=True)
-        
+
         assert "dangerous location" in str(exc_info.value)
 
     def test_call_raise_error_on_recheck_with_user_path(self):
-        """Test that raise_error=True in __call__ raises exception on recheck after adding user path."""
+        """Test raise_error=True in __call__ raises exception on recheck after adding user path."""
         system = platform.system()
-        
+
         if system == "Windows":
             custom_path = "C:\\CustomDangerous"
         else:
             custom_path = "/custom/dangerous"
-        
+
         # Create checker with a path that will become dangerous
         checker = PathChecker(f"{custom_path}/file.txt")
         assert not checker  # Initially safe
-        
+
         # Add user path
         add_user_path(custom_path)
-        
+
         try:
             # Recheck with raise_error=True (no path argument, so rechecks original)
             with pytest.raises(DangerousPathError) as exc_info:
                 checker(raise_error=True)
-            
+
             assert "dangerous location" in str(exc_info.value)
         finally:
             clear_user_paths()
@@ -793,15 +793,15 @@ class TestPathCheckerCall:
     def test_call_raise_error_false_on_safe_path(self):
         """Test that raise_error=True in __call__ doesn't raise for safe paths."""
         system = platform.system()
-        
+
         if system == "Windows":
             safe_path = os.path.join(os.path.expanduser("~"), "Documents", "test.txt")
         else:
             safe_path = "/tmp/test.txt"
-        
+
         # Create checker
         checker = PathChecker(safe_path)
-        
+
         # Call with raise_error=True on safe path - should not raise
         result = checker(safe_path, raise_error=True)
         assert result is False
@@ -809,12 +809,12 @@ class TestPathCheckerCall:
     def test_raise_error_default_false_in_constructor(self):
         """Test that raise_error defaults to False in constructor."""
         system = platform.system()
-        
+
         if system == "Windows":
             dangerous_path = "C:\\Windows\\System32\\test.txt"
         else:
             dangerous_path = "/etc/passwd"
-        
+
         # Should not raise even though path is dangerous (default raise_error=False)
         checker = PathChecker(dangerous_path)
         assert checker  # Path is dangerous but no exception raised
@@ -822,17 +822,17 @@ class TestPathCheckerCall:
     def test_raise_error_default_false_in_call(self):
         """Test that raise_error defaults to False in __call__."""
         system = platform.system()
-        
+
         if system == "Windows":
             safe_path = os.path.join(os.path.expanduser("~"), "Documents", "test.txt")
             dangerous_path = "C:\\Windows\\System32\\test.txt"
         else:
             safe_path = "/tmp/test.txt"
             dangerous_path = "/etc/passwd"
-        
+
         # Create checker with safe path
         checker = PathChecker(safe_path)
-        
+
         # Call with dangerous path but default raise_error=False
         result = checker(dangerous_path)  # Should not raise
         assert result is True  # Path is dangerous but no exception raised

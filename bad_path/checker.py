@@ -158,10 +158,10 @@ class PathChecker:
         self._path = path
         self._path_obj = Path(path).resolve()
         self._raise_error = raise_error
-        
+
         # Load paths and check the initial path
         self._load_and_check_paths()
-        
+
         # Raise error if requested and path is dangerous
         if self._raise_error and (self._is_system_path or self._is_user_path):
             raise DangerousPathError(f"Path '{path}' points to a dangerous location")
@@ -199,7 +199,7 @@ class PathChecker:
         """
         if path_obj is None:
             path_obj = self._path_obj
-            
+
         for dangerous in paths:
             try:
                 dangerous_obj = Path(dangerous).resolve()
@@ -239,25 +239,25 @@ class PathChecker:
         if path is not None:
             # Check the new path against existing paths (no reload)
             path_obj = Path(path).resolve()
-            
+
             # Check against existing paths
             is_sys_path = self._check_against_paths(self._system_paths, path_obj)
             is_usr_path = self._check_against_paths(self._user_paths, path_obj)
-            
+
             is_dangerous = is_sys_path or is_usr_path
-            
+
             if is_dangerous and raise_error:
                 raise DangerousPathError(f"Path '{path}' points to a dangerous location")
-            
+
             return is_dangerous
         else:
             # Reload paths and check the original path
             self._load_and_check_paths()
             is_dangerous = self._is_system_path or self._is_user_path
-            
+
             if is_dangerous and raise_error:
                 raise DangerousPathError(f"Path '{self._path}' points to a dangerous location")
-            
+
             return is_dangerous
 
     def __bool__(self) -> bool:
