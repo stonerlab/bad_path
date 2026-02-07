@@ -153,7 +153,18 @@ class PathChecker:
         """
         self._path = path
         self._path_obj = Path(path).resolve()
+        self._system_paths = None
+        self._user_paths = None
+        self._is_system_path = None
+        self._is_user_path = None
+        
+        # Load paths and check the initial path
+        self._load_and_check_paths()
 
+    def _load_and_check_paths(self) -> None:
+        """
+        Load system and user paths, then check the current path against them.
+        """
         # Get system paths separately from user paths
         match platform.system():
             case "Windows":
@@ -190,6 +201,47 @@ class PathChecker:
                 # Handle cases where path resolution fails
                 continue
         return False
+
+    def __call__(self, path: Union[str, Path, None] = None) -> bool:
+        """
+        Check a path for danger, with optional path reload.
+
+        Args:
+            path: Optional path to check. If provided, checks the new path against
+                  existing system and user paths (without reloading). If not provided,
+                  rechecks the original path against reloaded system and user paths.
+
+        Returns:
+            True if the path is dangerous, False otherwise.
+
+        Example:
+            checker = PathChecker("/etc/passwd")
+            # Check a different path without reloading
+            is_dangerous = checker("/home/user/file.txt")
+            # Recheck original path with reloaded paths
+            is_dangerous = checker()
+        """
+        if path is not None:
+            # Check the new path against existing paths (no reload)
+            old_path = self._path
+            old_path_obj = self._path_obj
+            
+            self._path = path
+            self._path_obj = Path(path).resolve()
+            
+            # Check against existing paths
+            is_sys_path = self._check_against_paths(self._system_paths)
+            is_usr_path = self._check_against_paths(self._user_paths)
+            
+            # Restore original path
+            self._path = old_path
+            self._path_obj = old_path_obj
+            
+            return is_sys_path or is_usr_path
+        else:
+            # Reload paths and check the original path
+            self._load_and_check_paths()
+            return self._is_system_path or self._is_user_path
 
     def __bool__(self) -> bool:
         """
