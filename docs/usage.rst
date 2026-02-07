@@ -5,7 +5,8 @@ Basic Usage
 -----------
 
 The ``bad_path`` package provides several functions for checking if a file path
-points to a system-sensitive location.
+points to a system-sensitive location. It also provides a ``PathChecker`` class
+for a more object-oriented approach with additional details.
 
 Checking for Dangerous Paths
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -19,6 +20,31 @@ The simplest way to check if a path is dangerous:
    # Returns True if the path is dangerous, False otherwise
    if is_dangerous_path("/etc/passwd"):
        print("This is a dangerous path!")
+
+Using the PathChecker Class
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``PathChecker`` class provides a more detailed interface:
+
+.. code-block:: python
+
+   from bad_path import PathChecker
+
+   # Create a checker for a path
+   checker = PathChecker("/etc/passwd")
+
+   # Use it in boolean context
+   if checker:
+       print("This is a dangerous path!")
+       print(f"Is system path: {checker.is_system_path}")
+       print(f"Is sensitive path: {checker.is_sensitive_path}")
+
+   # Access the original path
+   print(f"Checked path: {checker.path}")
+
+The ``PathChecker`` class evaluates to ``True`` when used in boolean context
+if the path is dangerous, and ``False`` otherwise. This allows you to not only
+detect dangerous paths but also get details about why they are dangerous.
 
 Raising Exceptions
 ~~~~~~~~~~~~~~~~~~
@@ -73,6 +99,29 @@ appropriate dangerous path lists:
 
 Examples
 --------
+
+Using PathChecker for Detailed Feedback
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: python
+
+   from bad_path import PathChecker
+
+   def validate_path(path):
+       """Validate a path and provide detailed feedback."""
+       checker = PathChecker(path)
+       
+       if checker:
+           reasons = []
+           if checker.is_system_path:
+               reasons.append("it's a system path")
+           if checker.is_sensitive_path:
+               reasons.append("it's a sensitive location")
+           print(f"❌ Cannot use {path} because {' and '.join(reasons)}")
+           return False
+       
+       print(f"✅ Path {path} is safe to use")
+       return True
 
 Validating User Input
 ~~~~~~~~~~~~~~~~~~~~~
