@@ -144,18 +144,27 @@ class PathChecker:
             print(f"User-defined: {checker.is_sensitive_path}")
     """
 
-    def __init__(self, path: Union[str, Path]):
+    def __init__(self, path: Union[str, Path], raise_error: bool = False):
         """
         Initialize the PathChecker with a path to check.
 
         Args:
             path: The file path to check (string or Path object)
+            raise_error: If True, raise DangerousPathError if the path is dangerous
+
+        Raises:
+            DangerousPathError: If raise_error is True and the path is dangerous.
         """
         self._path = path
         self._path_obj = Path(path).resolve()
+        self._raise_error = raise_error
         
         # Load paths and check the initial path
         self._load_and_check_paths()
+        
+        # Raise error if requested and path is dangerous
+        if self._raise_error and (self._is_system_path or self._is_user_path):
+            raise DangerousPathError(f"Path '{path}' points to a dangerous location")
 
     def _load_and_check_paths(self) -> None:
         """
@@ -202,7 +211,7 @@ class PathChecker:
                 continue
         return False
 
-    def __call__(self, path: Optional[Union[str, Path]] = None) -> bool:
+    def __call__(self, path: Optional[Union[str, Path]] = None, raise_error: bool = False) -> bool:
         """
         Check a path for danger, with optional path reload.
 
@@ -210,9 +219,13 @@ class PathChecker:
             path: Optional path to check. If provided, checks the new path against
                   existing system and user paths (without reloading). If not provided,
                   rechecks the original path against reloaded system and user paths.
+            raise_error: If True, raise DangerousPathError if the path is dangerous
 
         Returns:
             True if the path is dangerous, False otherwise.
+
+        Raises:
+            DangerousPathError: If raise_error is True and the path is dangerous.
 
         Example:
             checker = PathChecker("/etc/passwd")
@@ -220,6 +233,8 @@ class PathChecker:
             is_dangerous = checker("/home/user/file.txt")
             # Recheck original path with reloaded paths
             is_dangerous = checker()
+            # Check with error raising
+            checker("/etc/passwd", raise_error=True)  # Raises DangerousPathError
         """
         if path is not None:
             # Check the new path against existing paths (no reload)
@@ -229,11 +244,21 @@ class PathChecker:
             is_sys_path = self._check_against_paths(self._system_paths, path_obj)
             is_usr_path = self._check_against_paths(self._user_paths, path_obj)
             
-            return is_sys_path or is_usr_path
+            is_dangerous = is_sys_path or is_usr_path
+            
+            if is_dangerous and raise_error:
+                raise DangerousPathError(f"Path '{path}' points to a dangerous location")
+            
+            return is_dangerous
         else:
             # Reload paths and check the original path
             self._load_and_check_paths()
-            return self._is_system_path or self._is_user_path
+            is_dangerous = self._is_system_path or self._is_user_path
+            
+            if is_dangerous and raise_error:
+                raise DangerousPathError(f"Path '{self._path}' points to a dangerous location")
+            
+            return is_dangerous
 
     def __bool__(self) -> bool:
         """

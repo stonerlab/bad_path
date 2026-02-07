@@ -707,4 +707,134 @@ class TestPathCheckerCall:
         finally:
             clear_user_paths()
 
+    def test_constructor_raise_error_on_dangerous_system_path(self):
+        """Test that raise_error=True in constructor raises exception for dangerous paths."""
+        system = platform.system()
+        
+        if system == "Windows":
+            dangerous_path = "C:\\Windows\\System32\\test.txt"
+        else:
+            dangerous_path = "/etc/passwd"
+        
+        with pytest.raises(DangerousPathError) as exc_info:
+            PathChecker(dangerous_path, raise_error=True)
+        
+        assert "dangerous location" in str(exc_info.value)
+
+    def test_constructor_raise_error_on_dangerous_user_path(self):
+        """Test that raise_error=True in constructor raises exception for user paths."""
+        custom_path = "/my/custom/dangerous"
+        add_user_path(custom_path)
+        
+        try:
+            with pytest.raises(DangerousPathError) as exc_info:
+                PathChecker(f"{custom_path}/file.txt", raise_error=True)
+            
+            assert "dangerous location" in str(exc_info.value)
+        finally:
+            clear_user_paths()
+
+    def test_constructor_raise_error_false_on_safe_path(self):
+        """Test that raise_error=True in constructor doesn't raise for safe paths."""
+        if platform.system() == "Windows":
+            safe_path = os.path.join(os.path.expanduser("~"), "Documents", "test.txt")
+        else:
+            safe_path = "/tmp/test.txt"
+        
+        # Should not raise an exception
+        checker = PathChecker(safe_path, raise_error=True)
+        assert not checker
+
+    def test_call_raise_error_on_dangerous_path(self):
+        """Test that raise_error=True in __call__ raises exception for dangerous paths."""
+        system = platform.system()
+        
+        if system == "Windows":
+            safe_path = os.path.join(os.path.expanduser("~"), "Documents", "test.txt")
+            dangerous_path = "C:\\Windows\\System32\\test.txt"
+        else:
+            safe_path = "/tmp/test.txt"
+            dangerous_path = "/etc/passwd"
+        
+        # Create checker with safe path
+        checker = PathChecker(safe_path)
+        
+        # Call with dangerous path and raise_error=True
+        with pytest.raises(DangerousPathError) as exc_info:
+            checker(dangerous_path, raise_error=True)
+        
+        assert "dangerous location" in str(exc_info.value)
+
+    def test_call_raise_error_on_recheck_with_user_path(self):
+        """Test that raise_error=True in __call__ raises exception on recheck after adding user path."""
+        system = platform.system()
+        
+        if system == "Windows":
+            custom_path = "C:\\CustomDangerous"
+        else:
+            custom_path = "/custom/dangerous"
+        
+        # Create checker with a path that will become dangerous
+        checker = PathChecker(f"{custom_path}/file.txt")
+        assert not checker  # Initially safe
+        
+        # Add user path
+        add_user_path(custom_path)
+        
+        try:
+            # Recheck with raise_error=True (no path argument, so rechecks original)
+            with pytest.raises(DangerousPathError) as exc_info:
+                checker(raise_error=True)
+            
+            assert "dangerous location" in str(exc_info.value)
+        finally:
+            clear_user_paths()
+
+    def test_call_raise_error_false_on_safe_path(self):
+        """Test that raise_error=True in __call__ doesn't raise for safe paths."""
+        system = platform.system()
+        
+        if system == "Windows":
+            safe_path = os.path.join(os.path.expanduser("~"), "Documents", "test.txt")
+        else:
+            safe_path = "/tmp/test.txt"
+        
+        # Create checker
+        checker = PathChecker(safe_path)
+        
+        # Call with raise_error=True on safe path - should not raise
+        result = checker(safe_path, raise_error=True)
+        assert result is False
+
+    def test_raise_error_default_false_in_constructor(self):
+        """Test that raise_error defaults to False in constructor."""
+        system = platform.system()
+        
+        if system == "Windows":
+            dangerous_path = "C:\\Windows\\System32\\test.txt"
+        else:
+            dangerous_path = "/etc/passwd"
+        
+        # Should not raise even though path is dangerous (default raise_error=False)
+        checker = PathChecker(dangerous_path)
+        assert checker  # Path is dangerous but no exception raised
+
+    def test_raise_error_default_false_in_call(self):
+        """Test that raise_error defaults to False in __call__."""
+        system = platform.system()
+        
+        if system == "Windows":
+            safe_path = os.path.join(os.path.expanduser("~"), "Documents", "test.txt")
+            dangerous_path = "C:\\Windows\\System32\\test.txt"
+        else:
+            safe_path = "/tmp/test.txt"
+            dangerous_path = "/etc/passwd"
+        
+        # Create checker with safe path
+        checker = PathChecker(safe_path)
+        
+        # Call with dangerous path but default raise_error=False
+        result = checker(dangerous_path)  # Should not raise
+        assert result is True  # Path is dangerous but no exception raised
+
 
