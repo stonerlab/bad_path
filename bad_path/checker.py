@@ -256,6 +256,22 @@ class PathChecker:
         # Check for invalid characters
         for char in self._invalid_chars:
             if char in path_str:
+                # Special handling for colon on Windows (valid in drive letters like C:)
+                if char == ":" and platform.system() == "Windows":
+                    # Check if colon is part of a drive letter (e.g., C:, D:)
+                    # Valid pattern: single letter followed by colon at start of path
+                    # or after whitespace/path separators
+                    if len(path_str) >= 2:
+                        # Check if path starts with drive letter (e.g., C:\)
+                        if path_str[1] == ":" and path_str[0].isalpha():
+                            # Check if there are any other colons in the path
+                            if path_str.count(":") == 1:
+                                continue  # This is a valid drive letter colon
+                            elif path_str[2:].count(":") > 0:
+                                # There are additional colons beyond the drive letter
+                                return True
+                            else:
+                                continue
                 return True
 
         # Windows-specific checks
