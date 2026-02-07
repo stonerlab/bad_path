@@ -18,6 +18,11 @@ class DangerousPathError(PermissionError):
 _user_defined_paths: list[str] = []
 
 
+# ============================================================================
+# Functions for User Paths
+# ============================================================================
+
+
 def add_user_path(path: str | Path) -> None:
     """
     Add a user-defined path to the list of dangerous paths.
@@ -86,6 +91,11 @@ def get_dangerous_paths() -> list[str]:
     return list(all_paths)
 
 
+# ============================================================================
+# Function Interface for Checking Paths
+# ============================================================================
+
+
 def is_system_path(path: str | Path) -> bool:
     """
     Check if a path is within a system directory.
@@ -120,6 +130,36 @@ def is_sensitive_path(path: str | Path) -> bool:
     # for backward compatibility. Use PathChecker class for fine-grained control.
     checker = PathChecker(path)
     return checker.is_system_path or checker.is_sensitive_path
+
+
+def is_dangerous_path(path: str | Path, raise_error: bool = False) -> bool:
+    """
+    Check if a path is dangerous (points to a system-sensitive location).
+
+    Args:
+        path: The file path to check (string or Path object)
+        raise_error: If True, raise DangerousPathError instead of returning True
+
+    Returns:
+        True if the path is dangerous, False otherwise.
+
+    Raises:
+        DangerousPathError: If raise_error is True and the path is dangerous.
+    """
+    try:
+        checker = PathChecker(path, raise_error=raise_error)
+        # Invert PathChecker's boolean (True when safe)
+        # to match function name (returns True when dangerous)
+        return not bool(checker)
+    except DangerousPathError:
+        # PathChecker raises with message "dangerous location"
+        # But for backward compatibility, we need "dangerous system location"
+        raise DangerousPathError(f"Path '{path}' points to a dangerous system location")
+
+
+# ============================================================================
+# Base Class
+# ============================================================================
 
 
 class BasePathChecker(ABC):
@@ -184,7 +224,7 @@ class BasePathChecker(ABC):
     def _load_invalid_chars(self) -> None:
         """
         Load platform-specific invalid characters and reserved names.
-        
+
         This method must be implemented by platform-specific subclasses.
         """
         pass
@@ -193,7 +233,7 @@ class BasePathChecker(ABC):
     def _load_and_check_paths(self) -> None:
         """
         Load system and user paths, then check the current path against them.
-        
+
         This method must be implemented by platform-specific subclasses.
         """
         pass
@@ -439,6 +479,11 @@ class BasePathChecker(ABC):
         return f"PathChecker('{self._path}', {status})"
 
 
+# ============================================================================
+# Platform Classes
+# ============================================================================
+
+
 class WindowsPathChecker(BasePathChecker):
     """Windows-specific PathChecker implementation."""
 
@@ -548,6 +593,11 @@ class PosixPathChecker(BasePathChecker):
         self._is_user_path = self._check_against_paths(self._user_paths)
 
 
+# ============================================================================
+# PathChecker Class
+# ============================================================================
+
+
 # Factory function to create the appropriate PathChecker based on platform
 def _create_path_checker(path: str | Path, raise_error: bool = False) -> BasePathChecker:
     """
@@ -608,28 +658,3 @@ class PathChecker:
             DangerousPathError: If raise_error is True and the path is dangerous.
         """
         return _create_path_checker(path, raise_error)
-
-
-def is_dangerous_path(path: str | Path, raise_error: bool = False) -> bool:
-    """
-    Check if a path is dangerous (points to a system-sensitive location).
-
-    Args:
-        path: The file path to check (string or Path object)
-        raise_error: If True, raise DangerousPathError instead of returning True
-
-    Returns:
-        True if the path is dangerous, False otherwise.
-
-    Raises:
-        DangerousPathError: If raise_error is True and the path is dangerous.
-    """
-    try:
-        checker = PathChecker(path, raise_error=raise_error)
-        # Invert PathChecker's boolean (True when safe)
-        # to match function name (returns True when dangerous)
-        return not bool(checker)
-    except DangerousPathError:
-        # PathChecker raises with message "dangerous location"
-        # But for backward compatibility, we need "dangerous system location"
-        raise DangerousPathError(f"Path '{path}' points to a dangerous system location")
