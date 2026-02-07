@@ -2,6 +2,7 @@
 Core functionality for checking dangerous file paths.
 """
 
+import os
 import platform
 from pathlib import Path
 
@@ -125,14 +126,14 @@ class PathChecker:
     A class to check if a path is dangerous and provide details about why.
 
     The class can be used in boolean context where it evaluates to True
-    if the path is dangerous, False otherwise.
+    if the path is safe (not dangerous), False otherwise.
 
     The class distinguishes between platform-specific system paths and
     user-defined sensitive paths through separate properties.
 
     Example:
         checker = PathChecker("/etc/passwd")
-        if checker:
+        if not checker:
             print(f"Dangerous path! System path: {checker.is_system_path}")
             print(f"User-defined: {checker.is_sensitive_path}")
     """
@@ -208,6 +209,9 @@ class PathChecker:
         """
         Check a path for danger, with optional path reload.
 
+        Note: Unlike the boolean context (which returns True for safe paths),
+        this method returns True if the path IS dangerous.
+
         Args:
             path: Optional path to check. If provided, checks the new path against
                   existing system and user paths (without reloading). If not provided,
@@ -215,7 +219,7 @@ class PathChecker:
             raise_error: If True, raise DangerousPathError if the path is dangerous
 
         Returns:
-            True if the path is dangerous, False otherwise.
+            True if the path is dangerous, False if safe.
 
         Raises:
             DangerousPathError: If raise_error is True and the path is dangerous.
@@ -255,19 +259,19 @@ class PathChecker:
 
     def __bool__(self) -> bool:
         """
-        Return True if the path is dangerous, False otherwise.
+        Return True if the path is safe (not dangerous), False otherwise.
 
         A path is considered dangerous if it matches either a platform-specific
         system path or a user-defined sensitive path.
 
         This allows the class to be used in boolean context:
-            if PathChecker("/etc/passwd"):
-                print("Dangerous!")
+            if PathChecker("/tmp/myfile.txt"):
+                print("Safe path!")
 
         Returns:
-            True if the path is dangerous, False otherwise.
+            True if the path is safe (not dangerous), False otherwise.
         """
-        return self._is_system_path or self._is_user_path
+        return not (self._is_system_path or self._is_user_path)
 
     @property
     def is_system_path(self) -> bool:
@@ -304,15 +308,71 @@ class PathChecker:
         """
         return self._path
 
+    @property
+    def is_readable(self) -> bool:
+        """
+        Check if the path is accessible for read operations.
+
+        For existing files/directories, checks read permission.
+        For non-existing paths, returns False.
+
+        Returns:
+            True if the path exists and is readable, False otherwise.
+        """
+        try:
+            # Check if path exists and is readable
+            return os.access(self._path_obj, os.R_OK)
+        except (OSError, ValueError):
+            return False
+
+    @property
+    def is_writable(self) -> bool:
+        """
+        Check if the path is accessible for write operations.
+
+        For existing files/directories, checks write permission.
+        For non-existing paths, returns False (use is_creatable instead).
+
+        Returns:
+            True if the path exists and is writable, False otherwise.
+        """
+        try:
+            # Check if path exists and is writable
+            return os.access(self._path_obj, os.W_OK)
+        except (OSError, ValueError):
+            return False
+
+    @property
+    def is_creatable(self) -> bool:
+        """
+        Check if the path can be created (for non-existing paths).
+
+        For non-existing paths, checks if the parent directory exists and is writable.
+        For existing paths, returns False (use is_writable instead).
+
+        Returns:
+            True if the path doesn't exist and can be created, False otherwise.
+        """
+        try:
+            # If path exists, it's not creatable (it already exists)
+            if self._path_obj.exists():
+                return False
+            
+            # Check if parent directory exists and is writable
+            parent = self._path_obj.parent
+            return parent.exists() and os.access(parent, os.W_OK | os.X_OK)
+        except (OSError, ValueError):
+            return False
+
     def __repr__(self) -> str:
         """
         Return a string representation of the PathChecker.
 
         Returns:
-            String representation showing path and danger status.
+            String representation showing path and safety status.
         """
-        is_dangerous = self._is_system_path or self._is_user_path
-        status = "dangerous" if is_dangerous else "safe"
+        is_safe = not (self._is_system_path or self._is_user_path)
+        status = "safe" if is_safe else "dangerous"
         return f"PathChecker('{self._path}', {status})"
 
 
@@ -332,7 +392,8 @@ def is_dangerous_path(path: str | Path, raise_error: bool = False) -> bool:
     """
     try:
         checker = PathChecker(path, raise_error=raise_error)
-        return bool(checker)
+        # Invert PathChecker's boolean (True when safe) to match function name (returns True when dangerous)
+        return not bool(checker)
     except DangerousPathError:
         # PathChecker raises with message "dangerous location"
         # But for backward compatibility, we need "dangerous system location"

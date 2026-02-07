@@ -285,17 +285,17 @@ class TestPathChecker:
         assert isinstance(checker, PathChecker)
 
     def test_bool_false_for_safe_path(self):
-        """Test that PathChecker evaluates to False for safe paths."""
+        """Test that PathChecker evaluates to True for safe paths."""
         if platform.system() == "Windows":
             safe_path = os.path.join(os.path.expanduser("~"), "Documents", "test.txt")
         else:
             safe_path = "/tmp/test.txt"
 
         checker = PathChecker(safe_path)
-        assert not checker  # Should be False/falsy
+        assert checker  # Should be True/truthy for safe paths
 
     def test_bool_true_for_dangerous_path(self):
-        """Test that PathChecker evaluates to True for dangerous paths."""
+        """Test that PathChecker evaluates to False for dangerous paths."""
         system = platform.system()
 
         if system == "Windows":
@@ -304,7 +304,7 @@ class TestPathChecker:
             dangerous_path = "/etc/passwd"
 
         checker = PathChecker(dangerous_path)
-        assert checker  # Should be True/truthy
+        assert not checker  # Should be False/falsy for dangerous paths
 
     def test_is_system_path_property_safe(self):
         """Test is_system_path property returns False for safe paths."""
@@ -374,8 +374,8 @@ class TestPathChecker:
             safe_path = "/tmp/test.txt"
 
         checker = PathChecker(safe_path)
-        if checker:
-            pytest.fail("Safe path should not evaluate to True")
+        if not checker:
+            pytest.fail("Safe path should evaluate to True")
 
     def test_can_use_in_if_statement_dangerous(self):
         """Test using PathChecker in if statement with dangerous path."""
@@ -387,10 +387,8 @@ class TestPathChecker:
             dangerous_path = "/etc/passwd"
 
         checker = PathChecker(dangerous_path)
-        is_dangerous = False
-        if checker:
-            is_dangerous = True
-        assert is_dangerous
+        is_safe = checker  # Should be False for dangerous path
+        assert not is_safe
 
     def test_provides_details_about_danger(self):
         """Test that PathChecker provides details about why path is dangerous."""
@@ -403,7 +401,7 @@ class TestPathChecker:
 
         checker = PathChecker(dangerous_path)
         # Can check both that it's dangerous and get details
-        assert checker  # It's dangerous
+        assert not checker  # It's dangerous (evaluates to False)
         assert checker.is_system_path  # It's a system path
         assert not checker.is_sensitive_path  # It's NOT a user-defined path
 
@@ -415,7 +413,7 @@ class TestPathChecker:
 
         try:
             checker = PathChecker(f"{test_path}/file.txt")
-            assert checker  # Should be dangerous
+            assert not checker  # Should be dangerous (evaluates to False)
             assert not checker.is_system_path  # Not a system path
             assert checker.is_sensitive_path  # IS a user-defined path
         finally:
@@ -432,7 +430,7 @@ class TestPathChecker:
             dangerous_path = "/etc"
 
         checker = PathChecker(dangerous_path)
-        assert checker
+        assert not checker  # Dangerous path evaluates to False
 
     def test_distinction_system_vs_user_paths(self):
         """Test that is_system_path and is_sensitive_path are properly distinguished."""
@@ -479,7 +477,7 @@ class TestPathChecker:
             # Should be flagged as both
             assert checker.is_system_path is True
             assert checker.is_sensitive_path is True
-            assert checker  # Should be dangerous
+            assert not checker  # Should be dangerous (evaluates to False)
         finally:
             clear_user_paths()
 
@@ -499,7 +497,7 @@ class TestPathChecker:
 
         try:
             checker = PathChecker(f"{custom_path}/secret.txt")
-            assert checker  # Should be dangerous
+            assert not checker  # Should be dangerous (evaluates to False)
             assert checker.is_system_path is False  # Not a system path
             assert checker.is_sensitive_path is True  # But is user-defined
         finally:
@@ -521,11 +519,11 @@ class TestPathCheckerCall:
             safe_path = "/tmp/test.txt"
 
         checker = PathChecker(dangerous_path)
-        assert checker  # Original path is dangerous
+        assert not checker  # Original path is dangerous (evaluates to False)
 
         # Check a different safe path without reloading
         result = checker(safe_path)
-        assert result is False  # New path is safe
+        assert result is False  # New path is safe (call returns False for safe)
 
         # Original path should still be stored
         assert checker.path == dangerous_path
@@ -542,11 +540,11 @@ class TestPathCheckerCall:
             dangerous_path = "/etc/passwd"
 
         checker = PathChecker(safe_path)
-        assert not checker  # Original path is safe
+        assert checker  # Original path is safe (evaluates to True)
 
         # Check a different dangerous path without reloading
         result = checker(dangerous_path)
-        assert result is True  # New path is dangerous
+        assert result is True  # New path is dangerous (call returns True for dangerous)
 
         # Original path should still be stored
         assert checker.path == safe_path
@@ -563,7 +561,7 @@ class TestPathCheckerCall:
 
         # Create checker for custom path before adding it
         checker = PathChecker(f"{custom_path}/file.txt")
-        assert not checker  # Not dangerous yet
+        assert checker  # Not dangerous yet (safe evaluates to True)
 
         # Add the path to user paths
         add_user_path(custom_path)
@@ -571,7 +569,7 @@ class TestPathCheckerCall:
         try:
             # Call without path should reload and recheck
             result = checker()
-            assert result is True  # Should now be dangerous
+            assert result is True  # Should now be dangerous (call returns True for dangerous)
 
             # Properties should also be updated
             assert checker.is_sensitive_path is True
@@ -593,7 +591,7 @@ class TestPathCheckerCall:
 
         # Create checker with user paths empty
         checker = PathChecker(safe_path)
-        assert not checker  # Safe path
+        assert checker  # Safe path (evaluates to True)
 
         # Store the original user paths reference
         original_user_paths = checker._user_paths
@@ -666,7 +664,7 @@ class TestPathCheckerCall:
 
         # Create checker
         checker = PathChecker(f"{custom_path}/file.txt")
-        assert not checker
+        assert checker  # Should be safe initially (True)
         assert not checker.is_sensitive_path
 
         # Add user path
@@ -676,10 +674,10 @@ class TestPathCheckerCall:
             # Call without path to reload
             result = checker()
 
-            # Should be dangerous now
+            # Should be dangerous now (result from __call__ returns True if dangerous)
             assert result is True
             assert checker.is_sensitive_path is True
-            assert bool(checker) is True
+            assert bool(checker) is False  # Boolean context is False for dangerous
         finally:
             clear_user_paths()
 
@@ -702,11 +700,11 @@ class TestPathCheckerCall:
         try:
             # Create checker with safe path
             checker = PathChecker(safe_path)
-            assert not checker
+            assert checker  # Safe path (evaluates to True)
 
             # Check the user-defined dangerous path
             result = checker(test_file)
-            assert result is True  # Should be dangerous
+            assert result is True  # Should be dangerous (call returns True for dangerous)
         finally:
             clear_user_paths()
 
@@ -746,7 +744,7 @@ class TestPathCheckerCall:
 
         # Should not raise an exception
         checker = PathChecker(safe_path, raise_error=True)
-        assert not checker
+        assert checker  # Safe path (evaluates to True)
 
     def test_call_raise_error_on_dangerous_path(self):
         """Test that raise_error=True in __call__ raises exception for dangerous paths."""
@@ -779,7 +777,7 @@ class TestPathCheckerCall:
 
         # Create checker with a path that will become dangerous
         checker = PathChecker(f"{custom_path}/file.txt")
-        assert not checker  # Initially safe
+        assert checker  # Initially safe (evaluates to True)
 
         # Add user path
         add_user_path(custom_path)
@@ -820,7 +818,7 @@ class TestPathCheckerCall:
 
         # Should not raise even though path is dangerous (default raise_error=False)
         checker = PathChecker(dangerous_path)
-        assert checker  # Path is dangerous but no exception raised
+        assert not checker  # Path is dangerous (evaluates to False) but no exception raised
 
     def test_raise_error_default_false_in_call(self):
         """Test that raise_error defaults to False in __call__."""
@@ -839,5 +837,113 @@ class TestPathCheckerCall:
         # Call with dangerous path but default raise_error=False
         result = checker(dangerous_path)  # Should not raise
         assert result is True  # Path is dangerous but no exception raised
+
+
+class TestPathAccessibility:
+    """Tests for path accessibility checking."""
+
+    def test_is_readable_with_readable_file(self, tmp_path):
+        """Test is_readable returns True for readable files."""
+        # Create a temporary file
+        test_file = tmp_path / "test_file.txt"
+        test_file.write_text("test content")
+        
+        checker = PathChecker(test_file)
+        assert checker.is_readable is True
+
+    def test_is_readable_with_nonexistent_file(self, tmp_path):
+        """Test is_readable returns False for non-existent files."""
+        test_file = tmp_path / "nonexistent.txt"
+        
+        checker = PathChecker(test_file)
+        assert checker.is_readable is False
+
+    def test_is_writable_with_writable_file(self, tmp_path):
+        """Test is_writable returns True for writable files."""
+        # Create a temporary file
+        test_file = tmp_path / "test_file.txt"
+        test_file.write_text("test content")
+        
+        checker = PathChecker(test_file)
+        assert checker.is_writable is True
+
+    def test_is_writable_with_nonexistent_file(self, tmp_path):
+        """Test is_writable returns False for non-existent files."""
+        test_file = tmp_path / "nonexistent.txt"
+        
+        checker = PathChecker(test_file)
+        assert checker.is_writable is False
+
+    def test_is_writable_with_readonly_file(self, tmp_path):
+        """Test is_writable returns False for read-only files."""
+        # Create a temporary file and make it read-only
+        test_file = tmp_path / "readonly.txt"
+        test_file.write_text("test content")
+        test_file.chmod(0o444)  # Read-only
+        
+        checker = PathChecker(test_file)
+        assert checker.is_writable is False
+        
+        # Cleanup: restore write permission for cleanup
+        test_file.chmod(0o644)
+
+    def test_is_creatable_with_writable_parent(self, tmp_path):
+        """Test is_creatable returns True when parent is writable."""
+        test_file = tmp_path / "new_file.txt"
+        
+        checker = PathChecker(test_file)
+        assert checker.is_creatable is True
+
+    def test_is_creatable_with_existing_file(self, tmp_path):
+        """Test is_creatable returns False for existing files."""
+        test_file = tmp_path / "existing.txt"
+        test_file.write_text("test content")
+        
+        checker = PathChecker(test_file)
+        assert checker.is_creatable is False
+
+    def test_is_creatable_with_nonexistent_parent(self, tmp_path):
+        """Test is_creatable returns False when parent doesn't exist."""
+        test_file = tmp_path / "nonexistent_dir" / "new_file.txt"
+        
+        checker = PathChecker(test_file)
+        assert checker.is_creatable is False
+
+    def test_accessibility_with_system_path(self):
+        """Test accessibility checks work with system paths."""
+        system = platform.system()
+        
+        if system == "Windows":
+            test_path = "C:\\Windows\\System32\\test.txt"
+        else:
+            test_path = "/etc/passwd"
+        
+        checker = PathChecker(test_path)
+        # The path should be dangerous (evaluates to False in boolean context)
+        assert bool(checker) is False
+        # Accessibility depends on actual permissions, just check it doesn't crash
+        assert isinstance(checker.is_readable, bool)
+        assert isinstance(checker.is_writable, bool)
+        assert isinstance(checker.is_creatable, bool)
+
+    def test_accessibility_with_user_defined_path(self, tmp_path):
+        """Test accessibility checks with user-defined dangerous paths."""
+        test_dir = tmp_path / "custom_dangerous"
+        test_dir.mkdir()
+        test_file = test_dir / "test.txt"
+        test_file.write_text("test")
+        
+        # Add as user-defined dangerous path
+        add_user_path(str(test_dir))
+        
+        try:
+            checker = PathChecker(test_file)
+            # Should be dangerous due to user-defined path (evaluates to False)
+            assert bool(checker) is False
+            # But still accessible
+            assert checker.is_readable is True
+            assert checker.is_writable is True
+        finally:
+            clear_user_paths()
 
 
