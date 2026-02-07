@@ -4,7 +4,6 @@ Core functionality for checking dangerous file paths.
 
 import platform
 from pathlib import Path
-from typing import List, Optional, Union
 
 
 class DangerousPathError(Exception):
@@ -14,10 +13,10 @@ class DangerousPathError(Exception):
 
 
 # Module-level list of user-defined dangerous paths
-_user_defined_paths: List[str] = []
+_user_defined_paths: list[str] = []
 
 
-def add_user_path(path: Union[str, Path]) -> None:
+def add_user_path(path: str | Path) -> None:
     """
     Add a user-defined path to the list of dangerous paths.
 
@@ -29,7 +28,7 @@ def add_user_path(path: Union[str, Path]) -> None:
         _user_defined_paths.append(path_str)
 
 
-def remove_user_path(path: Union[str, Path]) -> None:
+def remove_user_path(path: str | Path) -> None:
     """
     Remove a user-defined path from the list of dangerous paths.
 
@@ -53,7 +52,7 @@ def clear_user_paths() -> None:
     _user_defined_paths.clear()
 
 
-def get_user_paths() -> List[str]:
+def get_user_paths() -> list[str]:
     """
     Get the list of user-defined dangerous paths.
 
@@ -63,7 +62,7 @@ def get_user_paths() -> List[str]:
     return _user_defined_paths.copy()
 
 
-def get_dangerous_paths() -> List[str]:
+def get_dangerous_paths() -> list[str]:
     """
     Get a list of dangerous/sensitive paths based on the current OS.
     Includes both system paths and user-defined paths.
@@ -85,7 +84,7 @@ def get_dangerous_paths() -> List[str]:
     return list(all_paths)
 
 
-def is_system_path(path: Union[str, Path]) -> bool:
+def is_system_path(path: str | Path) -> bool:
     """
     Check if a path is within a system directory.
 
@@ -102,7 +101,7 @@ def is_system_path(path: Union[str, Path]) -> bool:
     return checker.is_system_path or checker.is_sensitive_path
 
 
-def is_sensitive_path(path: Union[str, Path]) -> bool:
+def is_sensitive_path(path: str | Path) -> bool:
     """
     Check if a path points to a sensitive location.
 
@@ -138,7 +137,7 @@ class PathChecker:
             print(f"User-defined: {checker.is_sensitive_path}")
     """
 
-    def __init__(self, path: Union[str, Path], raise_error: bool = False):
+    def __init__(self, path: str | Path, raise_error: bool = False):
         """
         Initialize the PathChecker with a path to check.
 
@@ -180,7 +179,7 @@ class PathChecker:
         self._is_system_path = self._check_against_paths(self._system_paths)
         self._is_user_path = self._check_against_paths(self._user_paths)
 
-    def _check_against_paths(self, paths: List[str], path_obj: Optional[Path] = None) -> bool:
+    def _check_against_paths(self, paths: list[str], path_obj: Path | None = None) -> bool:
         """
         Internal method to check if a path matches any in the given list.
 
@@ -205,7 +204,7 @@ class PathChecker:
                 continue
         return False
 
-    def __call__(self, path: Optional[Union[str, Path]] = None, raise_error: bool = False) -> bool:
+    def __call__(self, path: str | Path | None = None, raise_error: bool = False) -> bool:
         """
         Check a path for danger, with optional path reload.
 
@@ -296,7 +295,7 @@ class PathChecker:
         return self._is_user_path
 
     @property
-    def path(self) -> Union[str, Path]:
+    def path(self) -> str | Path:
         """
         Get the original path that was checked.
 
@@ -317,7 +316,7 @@ class PathChecker:
         return f"PathChecker('{self._path}', {status})"
 
 
-def is_dangerous_path(path: Union[str, Path], raise_error: bool = False) -> bool:
+def is_dangerous_path(path: str | Path, raise_error: bool = False) -> bool:
     """
     Check if a path is dangerous (points to a system-sensitive location).
 
