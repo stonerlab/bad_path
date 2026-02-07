@@ -847,14 +847,14 @@ class TestPathAccessibility:
         # Create a temporary file
         test_file = tmp_path / "test_file.txt"
         test_file.write_text("test content")
-        
+
         checker = PathChecker(test_file)
         assert checker.is_readable is True
 
     def test_is_readable_with_nonexistent_file(self, tmp_path):
         """Test is_readable returns False for non-existent files."""
         test_file = tmp_path / "nonexistent.txt"
-        
+
         checker = PathChecker(test_file)
         assert checker.is_readable is False
 
@@ -863,14 +863,14 @@ class TestPathAccessibility:
         # Create a temporary file
         test_file = tmp_path / "test_file.txt"
         test_file.write_text("test content")
-        
+
         checker = PathChecker(test_file)
         assert checker.is_writable is True
 
     def test_is_writable_with_nonexistent_file(self, tmp_path):
         """Test is_writable returns False for non-existent files."""
         test_file = tmp_path / "nonexistent.txt"
-        
+
         checker = PathChecker(test_file)
         assert checker.is_writable is False
 
@@ -880,17 +880,17 @@ class TestPathAccessibility:
         test_file = tmp_path / "readonly.txt"
         test_file.write_text("test content")
         test_file.chmod(0o444)  # Read-only
-        
+
         checker = PathChecker(test_file)
         assert checker.is_writable is False
-        
+
         # Cleanup: restore write permission for cleanup
         test_file.chmod(0o644)
 
     def test_is_creatable_with_writable_parent(self, tmp_path):
         """Test is_creatable returns True when parent is writable."""
         test_file = tmp_path / "new_file.txt"
-        
+
         checker = PathChecker(test_file)
         assert checker.is_creatable is True
 
@@ -898,26 +898,26 @@ class TestPathAccessibility:
         """Test is_creatable returns False for existing files."""
         test_file = tmp_path / "existing.txt"
         test_file.write_text("test content")
-        
+
         checker = PathChecker(test_file)
         assert checker.is_creatable is False
 
     def test_is_creatable_with_nonexistent_parent(self, tmp_path):
         """Test is_creatable returns False when parent doesn't exist."""
         test_file = tmp_path / "nonexistent_dir" / "new_file.txt"
-        
+
         checker = PathChecker(test_file)
         assert checker.is_creatable is False
 
     def test_accessibility_with_system_path(self):
         """Test accessibility checks work with system paths."""
         system = platform.system()
-        
+
         if system == "Windows":
             test_path = "C:\\Windows\\System32\\test.txt"
         else:
             test_path = "/etc/passwd"
-        
+
         checker = PathChecker(test_path)
         # The path should be dangerous (evaluates to False in boolean context)
         assert bool(checker) is False
@@ -932,10 +932,10 @@ class TestPathAccessibility:
         test_dir.mkdir()
         test_file = test_dir / "test.txt"
         test_file.write_text("test")
-        
+
         # Add as user-defined dangerous path
         add_user_path(str(test_dir))
-        
+
         try:
             checker = PathChecker(test_file)
             # Should be dangerous due to user-defined path (evaluates to False)
@@ -960,7 +960,7 @@ class TestInvalidCharacters:
         """Test that a safe POSIX path has no invalid characters."""
         if platform.system() == "Windows":
             pytest.skip("POSIX-specific test")
-        
+
         checker = PathChecker("/tmp/test_file.txt")
         assert checker.has_invalid_chars is False
 
@@ -968,7 +968,7 @@ class TestInvalidCharacters:
         """Test that null byte is detected as invalid on POSIX systems."""
         if platform.system() == "Windows":
             pytest.skip("POSIX-specific test")
-        
+
         checker = PathChecker("/tmp/test\x00file.txt")
         assert checker.has_invalid_chars is True
 
@@ -976,7 +976,7 @@ class TestInvalidCharacters:
         """Test that colon is detected as invalid on macOS."""
         if platform.system() != "Darwin":
             pytest.skip("macOS-specific test")
-        
+
         checker = PathChecker("/tmp/test:file.txt")
         assert checker.has_invalid_chars is True
 
@@ -984,7 +984,7 @@ class TestInvalidCharacters:
         """Test that null byte is detected as invalid on macOS."""
         if platform.system() != "Darwin":
             pytest.skip("macOS-specific test")
-        
+
         checker = PathChecker("/tmp/test\x00file.txt")
         assert checker.has_invalid_chars is True
 
@@ -992,7 +992,7 @@ class TestInvalidCharacters:
         """Test that Windows invalid characters are detected."""
         if platform.system() != "Windows":
             pytest.skip("Windows-specific test")
-        
+
         invalid_chars = ['<', '>', ':', '"', '|', '?', '*']
         for char in invalid_chars:
             checker = PathChecker(f"C:\\tmp\\test{char}file.txt")
@@ -1002,7 +1002,7 @@ class TestInvalidCharacters:
         """Test that Windows control characters are detected as invalid."""
         if platform.system() != "Windows":
             pytest.skip("Windows-specific test")
-        
+
         # Test a few control characters
         for i in [0, 1, 10, 31]:
             checker = PathChecker(f"C:\\tmp\\test{chr(i)}file.txt")
@@ -1012,26 +1012,28 @@ class TestInvalidCharacters:
         """Test that Windows reserved names are detected as invalid."""
         if platform.system() != "Windows":
             pytest.skip("Windows-specific test")
-        
+
         reserved_names = ["CON", "PRN", "AUX", "NUL", "COM1", "LPT1"]
         for name in reserved_names:
             # Test uppercase
             checker = PathChecker(f"C:\\tmp\\{name}")
             assert checker.has_invalid_chars is True, f"Reserved name '{name}' should be invalid"
-            
+
             # Test lowercase (case-insensitive)
             checker = PathChecker(f"C:\\tmp\\{name.lower()}")
-            assert checker.has_invalid_chars is True, f"Reserved name '{name.lower()}' should be invalid"
-            
+            msg = f"Reserved name '{name.lower()}' should be invalid"
+            assert checker.has_invalid_chars is True, msg
+
             # Test with extension
             checker = PathChecker(f"C:\\tmp\\{name}.txt")
-            assert checker.has_invalid_chars is True, f"Reserved name '{name}.txt' should be invalid"
+            msg = f"Reserved name '{name}.txt' should be invalid"
+            assert checker.has_invalid_chars is True, msg
 
     def test_windows_path_ending_with_space(self):
         """Test that Windows paths ending with space are detected as invalid."""
         if platform.system() != "Windows":
             pytest.skip("Windows-specific test")
-        
+
         checker = PathChecker("C:\\tmp\\testfile ")
         assert checker.has_invalid_chars is True
 
@@ -1039,7 +1041,7 @@ class TestInvalidCharacters:
         """Test that Windows paths ending with period are detected as invalid."""
         if platform.system() != "Windows":
             pytest.skip("Windows-specific test")
-        
+
         checker = PathChecker("C:\\tmp\\testfile.")
         assert checker.has_invalid_chars is True
 
@@ -1051,7 +1053,7 @@ class TestInvalidCharacters:
             test_path = "/tmp/test:file.txt"
         else:  # POSIX
             test_path = "/tmp/test\x00file.txt"
-        
+
         checker = PathChecker(test_path)
         # PathChecker evaluates to True when safe, False when dangerous
         assert bool(checker) is False
@@ -1065,21 +1067,21 @@ class TestInvalidCharacters:
             test_path = "/tmp/test:file.txt"
         else:  # POSIX
             test_path = "/tmp/test\x00file.txt"
-        
+
         with pytest.raises(DangerousPathError):
             PathChecker(test_path, raise_error=True)
 
     def test_call_with_invalid_chars_path(self):
         """Test that __call__ method detects invalid characters."""
         checker = PathChecker("/tmp/safe.txt")
-        
+
         if platform.system() == "Windows":
             test_path = "C:\\tmp\\test<file>.txt"
         elif platform.system() == "Darwin":
             test_path = "/tmp/test:file.txt"
         else:  # POSIX
             test_path = "/tmp/test\x00file.txt"
-        
+
         # __call__ returns True if dangerous, False if safe
         result = checker(test_path)
         assert result is True
@@ -1087,14 +1089,14 @@ class TestInvalidCharacters:
     def test_call_with_invalid_chars_and_raise_error(self):
         """Test that __call__ raises error for invalid characters when raise_error=True."""
         checker = PathChecker("/tmp/safe.txt")
-        
+
         if platform.system() == "Windows":
             test_path = "C:\\tmp\\test<file>.txt"
         elif platform.system() == "Darwin":
             test_path = "/tmp/test:file.txt"
         else:  # POSIX
             test_path = "/tmp/test\x00file.txt"
-        
+
         with pytest.raises(DangerousPathError):
             checker(test_path, raise_error=True)
 
@@ -1106,7 +1108,7 @@ class TestInvalidCharacters:
             test_path = "/tmp/test:file.txt"
         else:  # POSIX
             test_path = "/tmp/test\x00file.txt"
-        
+
         result = is_dangerous_path(test_path)
         assert result is True
 
@@ -1118,7 +1120,7 @@ class TestInvalidCharacters:
             test_path = "/tmp/test:file.txt"
         else:  # POSIX
             test_path = "/tmp/test\x00file.txt"
-        
+
         checker = PathChecker(test_path)
         repr_str = repr(checker)
         assert "dangerous" in repr_str
@@ -1130,7 +1132,7 @@ class TestInvalidCharacters:
             test_path = "C:\\tmp\\test_file-name.txt"
         else:
             test_path = "/tmp/test_file-name@#$%^&().txt"
-        
+
         checker = PathChecker(test_path)
         assert checker.has_invalid_chars is False
         assert bool(checker) is True  # Should be safe
@@ -1141,7 +1143,7 @@ class TestInvalidCharacters:
             test_path = "C:\\Windows\\test<file>.txt"
         else:
             test_path = "/etc/test\x00file.txt"
-        
+
         checker = PathChecker(test_path)
         # Should be dangerous for both reasons
         assert bool(checker) is False

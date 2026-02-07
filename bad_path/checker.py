@@ -162,7 +162,7 @@ class PathChecker:
         # Try to resolve the path, but handle errors gracefully
         try:
             self._path_obj = Path(path).resolve()
-        except (ValueError, OSError) as e:
+        except (ValueError, OSError):
             # If path contains invalid characters that prevent resolution,
             # create a non-resolved Path object
             self._path_obj = Path(path)
@@ -171,7 +171,10 @@ class PathChecker:
         self._load_and_check_paths()
 
         # Raise error if requested and path is dangerous
-        if self._raise_error and (self._is_system_path or self._is_user_path or self._has_invalid_chars):
+        is_dangerous = (
+            self._is_system_path or self._is_user_path or self._has_invalid_chars
+        )
+        if self._raise_error and is_dangerous:
             raise DangerousPathError(f"Path '{path}' points to a dangerous location")
 
     def _load_invalid_chars(self) -> None:
@@ -261,11 +264,11 @@ class PathChecker:
             # Extract the filename without path and extension
             path_obj = Path(path_str)
             name_without_ext = path_obj.stem.upper()
-            
+
             # Check if the name (without extension) is a reserved name
             if name_without_ext in self._reserved_names:
                 return True
-            
+
             # Check if path ends with space or period (invalid in Windows)
             if path_obj.name and (path_obj.name.endswith(" ") or path_obj.name.endswith(".")):
                 return True
@@ -445,7 +448,7 @@ class PathChecker:
             # If path exists, it's not creatable (it already exists)
             if self._path_obj.exists():
                 return False
-            
+
             # Check if parent directory exists and is writable
             parent = self._path_obj.parent
             return parent.exists() and os.access(parent, os.W_OK | os.X_OK)
@@ -480,7 +483,8 @@ def is_dangerous_path(path: str | Path, raise_error: bool = False) -> bool:
     """
     try:
         checker = PathChecker(path, raise_error=raise_error)
-        # Invert PathChecker's boolean (True when safe) to match function name (returns True when dangerous)
+        # Invert PathChecker's boolean (True when safe)
+        # to match function name (returns True when dangerous)
         return not bool(checker)
     except DangerousPathError:
         # PathChecker raises with message "dangerous location"
