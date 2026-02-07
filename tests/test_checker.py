@@ -387,11 +387,7 @@ class TestPathChecker:
             dangerous_path = "/etc/passwd"
 
         checker = PathChecker(dangerous_path)
-        is_safe = False
-        if not checker:
-            is_safe = False
-        else:
-            is_safe = True
+        is_safe = checker  # Should be False for dangerous path
         assert not is_safe
 
     def test_provides_details_about_danger(self):

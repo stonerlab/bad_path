@@ -392,7 +392,8 @@ def is_dangerous_path(path: str | Path, raise_error: bool = False) -> bool:
     """
     try:
         checker = PathChecker(path, raise_error=raise_error)
-        return not bool(checker)  # Inverted: checker is True when safe
+        # Invert PathChecker's boolean (True when safe) to match function name (returns True when dangerous)
+        return not bool(checker)
     except DangerousPathError:
         # PathChecker raises with message "dangerous location"
         # But for backward compatibility, we need "dangerous system location"
