@@ -57,6 +57,12 @@ if checker:
     print(f"Dangerous path detected!")
     print(f"Platform system path: {checker.is_system_path}")
     print(f"User-defined sensitive path: {checker.is_sensitive_path}")
+
+# Check path accessibility
+checker = PathChecker("/tmp/myfile.txt")
+print(f"Readable: {checker.is_readable}")
+print(f"Writable: {checker.is_writable}")
+print(f"Creatable: {checker.is_creatable}")
 ```
 
 ## Features
@@ -64,10 +70,68 @@ if checker:
 - ✅ Cross-platform support (Windows, macOS, Linux)
 - ✅ Simple API for checking dangerous paths
 - ✅ Object-oriented `PathChecker` class with detailed information
+- ✅ Path accessibility checks (read, write, create permissions)
 - ✅ Customizable error handling
 - ✅ Lightweight with no external dependencies
 - ✅ Works with both strings and `pathlib.Path` objects
 - ✅ User-defined dangerous paths support
+
+## Usage Examples
+
+### Basic Path Checking
+
+```python
+from bad_path import is_dangerous_path
+
+# Simple boolean check
+if is_dangerous_path("/etc/passwd"):
+    print("This is a dangerous system path!")
+
+if is_dangerous_path("/tmp/myfile.txt"):
+    print("Safe to use!")
+```
+
+### Checking Path Accessibility
+
+```python
+from bad_path import PathChecker
+
+# Check if a file is readable
+checker = PathChecker("/etc/passwd")
+if checker.is_readable:
+    print("File can be read")
+
+# Check if a file is writable
+checker = PathChecker("/tmp/test.txt")
+if checker.is_writable:
+    print("File can be written to")
+
+# Check if a new file can be created
+checker = PathChecker("/tmp/newfile.txt")
+if checker.is_creatable:
+    print("File can be created in this location")
+```
+
+### Combining Safety and Accessibility Checks
+
+```python
+from bad_path import PathChecker
+
+def safe_to_write(filepath):
+    """Check if a path is both safe and writable."""
+    checker = PathChecker(filepath)
+    
+    # Must not be in a dangerous location
+    if checker:
+        return False
+    
+    # Must be writable or creatable
+    return checker.is_writable or checker.is_creatable
+
+# Usage
+safe_to_write("/tmp/myfile.txt")  # True - safe and creatable
+safe_to_write("/etc/passwd")       # False - dangerous location
+```
 
 ## Documentation
 

@@ -50,6 +50,41 @@ dangerous paths (like ``/etc``, ``/bin`` on Linux, or ``C:\\Windows`` on Windows
 while ``is_sensitive_path`` checks against user-defined paths added via
 ``add_user_path()``.
 
+Checking Path Accessibility
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``PathChecker`` class also provides properties to check if a path is accessible
+for read, write, or create operations:
+
+.. code-block:: python
+
+   from bad_path import PathChecker
+
+   checker = PathChecker("/etc/passwd")
+
+   # Check if path is readable
+   if checker.is_readable:
+       print("Path can be read")
+
+   # Check if path is writable
+   if checker.is_writable:
+       print("Path can be written to")
+
+   # Check if a non-existent path can be created
+   checker2 = PathChecker("/tmp/new_file.txt")
+   if checker2.is_creatable:
+       print("Path can be created")
+
+The accessibility properties work as follows:
+
+* ``is_readable``: Returns ``True`` if the path exists and has read permission
+* ``is_writable``: Returns ``True`` if the path exists and has write permission
+* ``is_creatable``: Returns ``True`` if the path doesn't exist but can be created (parent directory is writable)
+
+These properties are useful for checking whether your application has the necessary
+permissions to perform operations on a path, in addition to checking if the path
+is in a dangerous location.
+
 Raising Exceptions
 ~~~~~~~~~~~~~~~~~~
 
@@ -161,3 +196,32 @@ Filtering File Lists
                if not is_system_path(filepath):
                    safe_files.append(filepath)
        return safe_files
+
+Combining Danger and Accessibility Checks
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: python
+
+   from bad_path import PathChecker
+
+   def safe_to_write(filepath):
+       """Check if a path is both safe (not dangerous) and writable."""
+       checker = PathChecker(filepath)
+       
+       # Path must not be dangerous
+       if checker:
+           print(f"❌ {filepath} is in a dangerous location!")
+           return False
+       
+       # Path must be writable or creatable
+       if not (checker.is_writable or checker.is_creatable):
+           print(f"❌ {filepath} is not accessible for writing!")
+           return False
+       
+       print(f"✅ {filepath} is safe and writable")
+       return True
+   
+   # Usage
+   safe_to_write("/tmp/myfile.txt")      # ✅ Safe and creatable
+   safe_to_write("/etc/passwd")          # ❌ Dangerous location
+   safe_to_write("/root/restricted.txt") # ❌ Not accessible (if not root)
