@@ -10,8 +10,7 @@ readme = "README.md"
 authors = [
     {name = "Gavin Burnell", email = "g.burnell@example.com"}
 ]
-license = {text = "MIT"}
-license-files = ["LICENSE"]
+license = {file = "LICENSE"}
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",

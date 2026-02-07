@@ -5,7 +5,8 @@ Basic Usage
 -----------
 
 The ``bad_path`` package provides several functions for checking if a file path
-points to a system-sensitive location.
+points to a system-sensitive location. It also provides a ``PathChecker`` class
+for a more object-oriented approach with additional details.
 
 Checking for Dangerous Paths
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -19,6 +20,35 @@ The simplest way to check if a path is dangerous:
    # Returns True if the path is dangerous, False otherwise
    if is_dangerous_path("/etc/passwd"):
        print("This is a dangerous path!")
+
+Using the PathChecker Class
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``PathChecker`` class provides a more detailed interface that distinguishes
+between platform-specific system paths and user-defined sensitive paths:
+
+.. code-block:: python
+
+   from bad_path import PathChecker
+
+   # Create a checker for a path
+   checker = PathChecker("/etc/passwd")
+
+   # Use it in boolean context
+   if checker:
+       print("This is a dangerous path!")
+       print(f"Is system path: {checker.is_system_path}")
+       print(f"Is user-defined sensitive: {checker.is_sensitive_path}")
+
+   # Access the original path
+   print(f"Checked path: {checker.path}")
+
+The ``PathChecker`` class evaluates to ``True`` when used in boolean context
+if the path is dangerous (either a system path or user-defined), and ``False``
+otherwise. The ``is_system_path`` property checks against platform-specific
+dangerous paths (like ``/etc``, ``/bin`` on Linux, or ``C:\\Windows`` on Windows),
+while ``is_sensitive_path`` checks against user-defined paths added via
+``add_user_path()``.
 
 Raising Exceptions
 ~~~~~~~~~~~~~~~~~~
@@ -73,6 +103,29 @@ appropriate dangerous path lists:
 
 Examples
 --------
+
+Using PathChecker for Detailed Feedback
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: python
+
+   from bad_path import PathChecker
+
+   def validate_path(path):
+       """Validate a path and provide detailed feedback."""
+       checker = PathChecker(path)
+       
+       if checker:
+           reasons = []
+           if checker.is_system_path:
+               reasons.append("it's a platform-specific system path")
+           if checker.is_sensitive_path:
+               reasons.append("it's a user-defined sensitive location")
+           print(f"❌ Cannot use {path} because {' and '.join(reasons)}")
+           return False
+       
+       print(f"✅ Path {path} is safe to use")
+       return True
 
 Validating User Input
 ~~~~~~~~~~~~~~~~~~~~~

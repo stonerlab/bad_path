@@ -9,6 +9,7 @@ __version__ = "0.1.0"
 
 from .checker import (
     DangerousPathError,
+    PathChecker,
     add_user_path,
     clear_user_paths,
     get_dangerous_paths,
@@ -20,6 +21,7 @@ from .checker import (
 )
 
 __all__ = [
+    "PathChecker",
     "is_dangerous_path",
     "is_system_path",
     "is_sensitive_path",

@@ -48,15 +48,26 @@ try:
     is_dangerous_path("/etc/passwd", raise_error=True)
 except DangerousPathError as e:
     print(f"Error: {e}")
+
+# Use the PathChecker class for more details
+from bad_path import PathChecker
+
+checker = PathChecker("/etc/passwd")
+if checker:
+    print(f"Dangerous path detected!")
+    print(f"Platform system path: {checker.is_system_path}")
+    print(f"User-defined sensitive path: {checker.is_sensitive_path}")
 ```
 
 ## Features
 
 - ✅ Cross-platform support (Windows, macOS, Linux)
 - ✅ Simple API for checking dangerous paths
+- ✅ Object-oriented `PathChecker` class with detailed information
 - ✅ Customizable error handling
 - ✅ Lightweight with no external dependencies
 - ✅ Works with both strings and `pathlib.Path` objects
+- ✅ User-defined dangerous paths support
 
 ## Documentation
 
