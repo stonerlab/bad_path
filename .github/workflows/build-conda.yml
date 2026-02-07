@@ -11,6 +11,9 @@ on:
     types: [published]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   build_conda:
     name: Build conda package on ${{ matrix.os }}
@@ -48,6 +51,8 @@ jobs:
     needs: [build_conda]
     runs-on: ubuntu-latest
     if: github.event_name == 'release' && github.event.action == 'published'
+    permissions:
+      contents: read
 
     steps:
     - uses: actions/download-artifact@v4
