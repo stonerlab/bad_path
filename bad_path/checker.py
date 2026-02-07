@@ -4,6 +4,7 @@ Core functionality for checking dangerous file paths.
 
 import os
 import platform
+from abc import ABC, abstractmethod
 from pathlib import Path
 
 
@@ -121,7 +122,7 @@ def is_sensitive_path(path: str | Path) -> bool:
     return checker.is_system_path or checker.is_sensitive_path
 
 
-class BasePathChecker:
+class BasePathChecker(ABC):
     """
     Base class for platform-specific path checkers.
 
@@ -179,6 +180,7 @@ class BasePathChecker:
         if self._raise_error and is_dangerous:
             raise DangerousPathError(f"Path '{path}' points to a dangerous location")
 
+    @abstractmethod
     def _load_invalid_chars(self) -> None:
         """
         Load platform-specific invalid characters and reserved names.
@@ -187,6 +189,7 @@ class BasePathChecker:
         """
         raise NotImplementedError("Subclass must implement _load_invalid_chars")
 
+    @abstractmethod
     def _load_and_check_paths(self) -> None:
         """
         Load system and user paths, then check the current path against them.
