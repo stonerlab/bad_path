@@ -448,8 +448,11 @@ class TestPathChecker:
         assert checker_system.is_system_path is True
         assert checker_system.is_sensitive_path is False
         
-        # Test with a user-defined path
-        user_path = "/custom/sensitive/data"
+        # Test with a user-defined path (use platform-agnostic path)
+        if system == "Windows":
+            user_path = "C:\\CustomSensitive\\Data"
+        else:
+            user_path = "/custom/sensitive/data"
         add_user_path(user_path)
         
         try:
@@ -482,7 +485,13 @@ class TestPathChecker:
 
     def test_only_user_defined_not_system(self):
         """Test that user-defined paths work for non-system locations."""
-        custom_path = "/home/user/my_sensitive_project"
+        system = platform.system()
+        
+        # Use platform-specific non-system paths
+        if system == "Windows":
+            custom_path = os.path.join(os.path.expanduser("~"), "MySensitiveProject")
+        else:
+            custom_path = "/home/user/my_sensitive_project"
         add_user_path(custom_path)
         
         try:
