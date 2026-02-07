@@ -2,7 +2,6 @@
 Core functionality for checking dangerous file paths.
 """
 
-import os
 import platform
 from pathlib import Path
 from typing import List, Union
@@ -21,47 +20,15 @@ def get_dangerous_paths() -> List[str]:
     Returns:
         List of dangerous path patterns for the current operating system.
     """
-    system = platform.system()
-
-    # Common sensitive paths across all platforms
-    common_paths = [
-        "/etc",
-        "/bin",
-        "/sbin",
-        "/boot",
-        "/sys",
-        "/proc",
-        "/dev",
-    ]
-
-    if system == "Windows":
-        return [
-            "C:\\Windows",
-            "C:\\Windows\\System32",
-            "C:\\Program Files",
-            "C:\\Program Files (x86)",
-            "C:\\ProgramData",
-            os.environ.get("WINDIR", "C:\\Windows"),
-            os.environ.get("SYSTEMROOT", "C:\\Windows"),
-        ]
-    elif system == "Darwin":  # macOS
-        return common_paths + [
-            "/System",
-            "/Library",
-            "/private",
-            "/var",
-            "/usr",
-            "/Applications",
-        ]
-    else:  # Linux and other Unix-like systems
-        return common_paths + [
-            "/root",
-            "/lib",
-            "/lib64",
-            "/usr",
-            "/var",
-            "/opt",
-        ]
+    match platform.system():
+        case "Windows":
+            from .platforms.windows import system_paths
+        case "Darwin":
+            from .platforms.darwin import system_paths
+        case _:  # Linux and other Unix-like systems
+            from .platforms.posix import system_paths
+    
+    return system_paths
 
 
 def is_system_path(path: Union[str, Path]) -> bool:
