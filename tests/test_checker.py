@@ -490,6 +490,9 @@ class TestPathChecker:
         # Use platform-specific non-system paths
         if system == "Windows":
             custom_path = os.path.join(os.path.expanduser("~"), "MySensitiveProject")
+        elif system == "Darwin":
+            # On macOS, use /Users path (not /home which may resolve to /var)
+            custom_path = "/Users/testuser/my_sensitive_project"
         else:
             custom_path = "/home/user/my_sensitive_project"
         add_user_path(custom_path)
