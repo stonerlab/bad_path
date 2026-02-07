@@ -20,6 +20,7 @@ from bad_path import (
     is_system_path,
     remove_user_path,
 )
+from bad_path.checker import BasePathChecker
 
 
 class TestGetDangerousPaths:
@@ -277,12 +278,12 @@ class TestPathChecker:
     def test_instantiation_with_string(self):
         """Test creating PathChecker with a string path."""
         checker = PathChecker("/tmp/test.txt")
-        assert isinstance(checker, PathChecker)
+        assert isinstance(checker, BasePathChecker)
 
     def test_instantiation_with_pathlib(self):
         """Test creating PathChecker with a Path object."""
         checker = PathChecker(Path("/tmp/test.txt"))
-        assert isinstance(checker, PathChecker)
+        assert isinstance(checker, BasePathChecker)
 
     def test_bool_false_for_safe_path(self):
         """Test that PathChecker evaluates to True for safe paths."""

@@ -121,8 +121,10 @@ def is_sensitive_path(path: str | Path) -> bool:
     return checker.is_system_path or checker.is_sensitive_path
 
 
-class PathChecker:
+class BasePathChecker:
     """
+    Base class for platform-specific path checkers.
+
     A class to check if a path is dangerous and provide details about why.
 
     The class can be used in boolean context where it evaluates to True
@@ -180,40 +182,18 @@ class PathChecker:
     def _load_invalid_chars(self) -> None:
         """
         Load platform-specific invalid characters and reserved names.
+        
+        This method must be implemented by platform-specific subclasses.
         """
-        match platform.system():
-            case "Windows":
-                from .platforms.windows import invalid_chars, reserved_names
-                self._reserved_names = reserved_names
-            case "Darwin":
-                from .platforms.darwin import invalid_chars
-                self._reserved_names = []
-            case _:  # Linux and other Unix-like systems
-                from .platforms.posix import invalid_chars
-                self._reserved_names = []
-
-        self._invalid_chars = invalid_chars
+        raise NotImplementedError("Subclass must implement _load_invalid_chars")
 
     def _load_and_check_paths(self) -> None:
         """
         Load system and user paths, then check the current path against them.
+        
+        This method must be implemented by platform-specific subclasses.
         """
-        # Get system paths
-        match platform.system():
-            case "Windows":
-                from .platforms.windows import system_paths
-            case "Darwin":
-                from .platforms.darwin import system_paths
-            case _:  # Linux and other Unix-like systems
-                from .platforms.posix import system_paths
-
-        self._system_paths = system_paths
-        self._user_paths = get_user_paths()
-
-        # Check both types
-        self._is_system_path = self._check_against_paths(self._system_paths)
-        self._is_user_path = self._check_against_paths(self._user_paths)
-        # Note: _has_invalid_chars is already set in __init__ before resolve
+        raise NotImplementedError("Subclass must implement _load_and_check_paths")
 
     def _check_against_paths(self, paths: list[str], path_obj: Path | None = None) -> bool:
         """
@@ -256,39 +236,7 @@ class PathChecker:
         # Check for invalid characters
         for char in self._invalid_chars:
             if char in path_str:
-                # Special handling for colon on Windows (valid in drive letters like C:)
-                if char == ":" and platform.system() == "Windows":
-                    # Check if colon is part of a drive letter (e.g., C:, D:)
-                    # Valid pattern: single letter followed by colon at start of path
-                    if len(path_str) >= 2 and path_str[1] == ":" and path_str[0].isalpha():
-                        # This is a valid drive letter if it's the only colon
-                        if path_str.count(":") == 1:
-                            continue  # This is a valid drive letter colon
                 return True
-
-        # Windows-specific checks
-        if platform.system() == "Windows":
-            # Check for reserved names (case-insensitive)
-            # Extract the filename from the path using string operations
-            # to avoid Path() issues with invalid characters
-            # Split by both forward slash and backslash
-            path_parts = path_str.replace("\\", "/").split("/")
-            if path_parts:
-                filename = path_parts[-1]
-
-                # Extract name without extension
-                if "." in filename:
-                    name_without_ext = filename.rsplit(".", 1)[0].upper()
-                else:
-                    name_without_ext = filename.upper()
-
-                # Check if the name (without extension) is a reserved name
-                if name_without_ext in self._reserved_names:
-                    return True
-
-                # Check if filename ends with space or period (invalid in Windows)
-                if filename and (filename.endswith(" ") or filename.endswith(".")):
-                    return True
 
         return False
 
@@ -482,6 +430,177 @@ class PathChecker:
         is_safe = not (self._is_system_path or self._is_user_path or self._has_invalid_chars)
         status = "safe" if is_safe else "dangerous"
         return f"PathChecker('{self._path}', {status})"
+
+
+class WindowsPathChecker(BasePathChecker):
+    """Windows-specific PathChecker implementation."""
+
+    def _load_invalid_chars(self) -> None:
+        """Load Windows-specific invalid characters and reserved names."""
+        from .platforms.windows import invalid_chars, reserved_names
+        self._invalid_chars = invalid_chars
+        self._reserved_names = reserved_names
+
+    def _load_and_check_paths(self) -> None:
+        """Load system and user paths, then check the current path against them."""
+        from .platforms.windows import system_paths
+        self._system_paths = system_paths
+        self._user_paths = get_user_paths()
+
+        # Check both types
+        self._is_system_path = self._check_against_paths(self._system_paths)
+        self._is_user_path = self._check_against_paths(self._user_paths)
+
+    def _check_invalid_chars(self, path_str: str | None = None) -> bool:
+        """
+        Check for Windows-specific invalid characters.
+
+        Includes special handling for:
+        - Drive letter colons (C:, D:, etc.)
+        - Reserved names (CON, PRN, AUX, etc.)
+        - Paths ending with space or period
+        """
+        if path_str is None:
+            path_str = str(self._path)
+
+        # Check for invalid characters
+        for char in self._invalid_chars:
+            if char in path_str:
+                # Special handling for colon on Windows (valid in drive letters like C:)
+                if char == ":":
+                    # Check if colon is part of a drive letter (e.g., C:, D:)
+                    # Valid pattern: single letter followed by colon at start of path
+                    if len(path_str) >= 2 and path_str[1] == ":" and path_str[0].isalpha():
+                        # This is a valid drive letter if it's the only colon
+                        if path_str.count(":") == 1:
+                            continue  # This is a valid drive letter colon
+                return True
+
+        # Check for reserved names (case-insensitive)
+        # Extract the filename from the path using string operations
+        # to avoid Path() issues with invalid characters
+        # Split by both forward slash and backslash
+        path_parts = path_str.replace("\\", "/").split("/")
+        if path_parts:
+            filename = path_parts[-1]
+
+            # Extract name without extension
+            if "." in filename:
+                name_without_ext = filename.rsplit(".", 1)[0].upper()
+            else:
+                name_without_ext = filename.upper()
+
+            # Check if the name (without extension) is a reserved name
+            if name_without_ext in self._reserved_names:
+                return True
+
+            # Check if filename ends with space or period (invalid in Windows)
+            if filename and (filename.endswith(" ") or filename.endswith(".")):
+                return True
+
+        return False
+
+
+class DarwinPathChecker(BasePathChecker):
+    """Darwin (macOS)-specific PathChecker implementation."""
+
+    def _load_invalid_chars(self) -> None:
+        """Load Darwin-specific invalid characters."""
+        from .platforms.darwin import invalid_chars
+        self._invalid_chars = invalid_chars
+        self._reserved_names = []
+
+    def _load_and_check_paths(self) -> None:
+        """Load system and user paths, then check the current path against them."""
+        from .platforms.darwin import system_paths
+        self._system_paths = system_paths
+        self._user_paths = get_user_paths()
+
+        # Check both types
+        self._is_system_path = self._check_against_paths(self._system_paths)
+        self._is_user_path = self._check_against_paths(self._user_paths)
+
+
+class PosixPathChecker(BasePathChecker):
+    """POSIX (Linux/Unix)-specific PathChecker implementation."""
+
+    def _load_invalid_chars(self) -> None:
+        """Load POSIX-specific invalid characters."""
+        from .platforms.posix import invalid_chars
+        self._invalid_chars = invalid_chars
+        self._reserved_names = []
+
+    def _load_and_check_paths(self) -> None:
+        """Load system and user paths, then check the current path against them."""
+        from .platforms.posix import system_paths
+        self._system_paths = system_paths
+        self._user_paths = get_user_paths()
+
+        # Check both types
+        self._is_system_path = self._check_against_paths(self._system_paths)
+        self._is_user_path = self._check_against_paths(self._user_paths)
+
+
+# Factory function to create the appropriate PathChecker based on platform
+def _create_path_checker(path: str | Path, raise_error: bool = False) -> BasePathChecker:
+    """
+    Create a platform-specific PathChecker instance.
+
+    Args:
+        path: The file path to check (string or Path object)
+        raise_error: If True, raise DangerousPathError if the path is dangerous
+
+    Returns:
+        A platform-specific PathChecker instance.
+
+    Raises:
+        DangerousPathError: If raise_error is True and the path is dangerous.
+    """
+    match platform.system():
+        case "Windows":
+            return WindowsPathChecker(path, raise_error)
+        case "Darwin":
+            return DarwinPathChecker(path, raise_error)
+        case _:  # Linux and other Unix-like systems
+            return PosixPathChecker(path, raise_error)
+
+
+# PathChecker is the public API - it's a callable class that acts as a factory
+class PathChecker:
+    """
+    A class to check if a path is dangerous and provide details about why.
+
+    This is a factory that creates platform-specific PathChecker instances
+    based on the current operating system.
+
+    The class can be used in boolean context where it evaluates to True
+    if the path is safe (not dangerous), False otherwise.
+
+    The class distinguishes between platform-specific system paths and
+    user-defined sensitive paths through separate properties.
+
+    Example:
+        checker = PathChecker("/etc/passwd")
+        if not checker:
+            print(f"Dangerous path! System path: {checker.is_system_path}")
+            print(f"User-defined: {checker.is_sensitive_path}")
+    """
+
+    def __new__(cls, path: str | Path, raise_error: bool = False) -> BasePathChecker:
+        """
+        Create a platform-specific PathChecker instance.
+
+        Args:
+            path: The file path to check (string or Path object)
+            raise_error: If True, raise DangerousPathError if the path is dangerous
+
+        Returns:
+            A platform-specific PathChecker instance.
+
+        Raises:
+            DangerousPathError: If raise_error is True and the path is dangerous.
+        """
+        return _create_path_checker(path, raise_error)
 
 
 def is_dangerous_path(path: str | Path, raise_error: bool = False) -> bool:
