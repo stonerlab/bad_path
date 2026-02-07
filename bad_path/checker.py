@@ -7,7 +7,7 @@ import platform
 from pathlib import Path
 
 
-class DangerousPathError(Exception):
+class DangerousPathError(PermissionError):
     """Exception raised when a dangerous path is detected."""
 
     pass
