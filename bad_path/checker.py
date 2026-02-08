@@ -437,6 +437,11 @@ class BasePathChecker(ABC):
 
         try:
             cwd = Path.cwd().resolve()
+            
+            # Check if path equals CWD (handles "." case)
+            if path_obj == cwd:
+                return False  # Path is CWD itself (safe)
+            
             # Try to express path_obj relative to cwd
             # If this succeeds, the path is within CWD
             path_obj.relative_to(cwd)
