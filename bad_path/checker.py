@@ -437,10 +437,15 @@ class BasePathChecker(ABC):
 
         try:
             cwd = Path.cwd().resolve()
-            # Check if the resolved path is within CWD or its subdirectories
-            return cwd not in path_obj.parents and path_obj != cwd
-        except (OSError, ValueError):
-            # If resolution fails, treat as dangerous
+            # Try to express path_obj relative to cwd
+            # If this succeeds, the path is within CWD
+            path_obj.relative_to(cwd)
+            return False  # Path is within CWD (safe)
+        except ValueError:
+            # relative_to raised ValueError, so path is outside CWD
+            return True  # Path is outside CWD (dangerous)
+        except (OSError, RuntimeError):
+            # If other resolution fails, treat as dangerous
             return True
 
     def _check_against_paths(self, paths: list[str], path_obj: Path | None = None) -> bool:

@@ -186,13 +186,11 @@ def test_cwd_only_with_symlink():
         try:
             symlink_path.symlink_to(outside_file)
 
-            # With cwd_only, the symlink itself is in CWD, but it resolves outside
-            # The resolved path should be outside CWD, so it should be dangerous
+            # With cwd_only, the symlink resolves to a path outside CWD
+            # Therefore it should be considered dangerous
             checker = PathChecker(symlink_path, cwd_only=True)
-            # The behavior depends on whether the symlink resolves outside CWD
-            # Since symlink points outside, resolved path is outside
-            if Path.cwd().resolve() not in symlink_path.resolve().parents:
-                assert not checker  # Should be dangerous if resolved outside CWD
+            # The symlink points outside CWD, so it should be dangerous
+            assert not checker  # Should be dangerous since it resolves outside CWD
 
         except (OSError, NotImplementedError):
             # Symlinks not supported on this platform
