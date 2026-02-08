@@ -94,6 +94,31 @@ if not is_dangerous_path("/tmp/myfile.txt"):
     print("Safe to use!")
 ```
 
+### Read vs Write Validation
+
+The `mode` parameter makes it easy to validate paths for different purposes:
+
+```python
+from bad_path import PathChecker
+
+# Validate for reading - allows system configuration files
+checker = PathChecker("/etc/passwd", mode="read")
+if checker:
+    print("Safe to read from this path!")
+    # Read the file...
+
+# Validate for writing - strict validation
+checker = PathChecker("/tmp/output.txt", mode="write")
+if checker:
+    print("Safe to write to this path!")
+    # Write to the file...
+
+# Attempting to write to system paths is blocked
+checker = PathChecker("/etc/myconfig.txt", mode="write")
+if not checker:
+    print("Blocked: Cannot write to system paths!")
+```
+
 ### Checking Path Accessibility
 
 ```python

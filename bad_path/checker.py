@@ -248,10 +248,34 @@ class BasePathChecker(ABC):
         raise_error (bool):
             If True, raise DangerousPathError if the path is dangerous.
             Defaults to False.
+        mode (str | None):
+            Validation mode for common use cases: "read", "write", or None.
+            Use "read" when validating paths for read operations (allows
+            reading from system directories and user-defined paths). Use
+            "write" when validating paths for write operations (strict
+            validation to prevent overwriting critical files). Use None
+            to manually control validation via individual flags. When
+            mode is specified, it overrides the system_ok, user_paths_ok,
+            and not_writeable flags. Defaults to None.
+        system_ok (bool):
+            If True, allow paths within system directories. Defaults to False.
+        user_paths_ok (bool):
+            If True, allow paths within user-defined sensitive locations.
+            Defaults to False.
+        not_writeable (bool):
+            If True, allow paths that are readable but not writeable.
+            Defaults to False.
 
     Raises:
         DangerousPathError:
             If raise_error is True and the path is dangerous.
+        ValueError:
+            If mode is not None, "read", or "write".
+
+    Notes:
+        When mode is specified, individual flag parameters (system_ok,
+        user_paths_ok, not_writeable) are ignored in favour of the mode's
+        preset values.
 
     Attributes:
         is_system_path (bool):
@@ -270,18 +294,58 @@ class BasePathChecker(ABC):
             The original path that was checked.
 
     Examples:
+        >>> # Strict validation (default) - dangerous for system paths
         >>> checker = PathChecker("/etc/passwd")  # doctest: +SKIP
         >>> if not checker:
         ...     print(f"Dangerous path! System path: {checker.is_system_path}")
-        ...     print(f"User-defined: {checker.is_sensitive_path}")
         Dangerous path! System path: True
-        User-defined: False
+        >>> # Read mode - allow reading system configuration files
+        >>> checker = PathChecker("/etc/passwd", mode="read")  # doctest: +SKIP
+        >>> if checker:
+        ...     print("Safe for reading!")
+        Safe for reading!
+        >>> # Write mode - strict validation to prevent overwriting
+        >>> checker = PathChecker("/tmp/myfile.txt", mode="write")  # doctest: +SKIP
+        >>> if checker:
+        ...     print("Safe for writing!")
+        Safe for writing!
     """
 
-    def __init__(self, path: str | Path, raise_error: bool = False):
+    def __init__(
+        self,
+        path: str | Path,
+        raise_error: bool = False,
+        mode: str | None = None,
+        system_ok: bool = False,
+        user_paths_ok: bool = False,
+        not_writeable: bool = False,
+    ):
         """Initialise the PathChecker with a path to check."""
         self._path = path
         self._raise_error = raise_error
+        self._mode = mode
+
+        # Handle mode parameter
+        if mode is not None:
+            if mode == "read":
+                # For reading: allow system paths, user paths, and non-writable paths
+                self._system_ok = True
+                self._user_paths_ok = True
+                self._not_writeable = True
+            elif mode == "write":
+                # For writing: strict validation (default flags)
+                self._system_ok = False
+                self._user_paths_ok = False
+                self._not_writeable = False
+            else:
+                raise ValueError(
+                    f"Invalid mode '{mode}'. Must be None, 'read', or 'write'."
+                )
+        else:
+            # No mode specified - use individual flags
+            self._system_ok = system_ok
+            self._user_paths_ok = user_paths_ok
+            self._not_writeable = not_writeable
 
         # Load platform-specific invalid characters first (before resolve)
         self._load_invalid_chars()
@@ -302,9 +366,7 @@ class BasePathChecker(ABC):
         self._load_and_check_paths()
 
         # Raise error if requested and path is dangerous
-        is_dangerous = (
-            self._is_system_path or self._is_user_path or self._has_invalid_chars
-        )
+        is_dangerous = self._is_dangerous()
         if self._raise_error and is_dangerous:
             raise DangerousPathError(f"Path '{path}' points to a dangerous location")
 
@@ -317,6 +379,33 @@ class BasePathChecker(ABC):
     def _load_and_check_paths(self) -> None:
         """Load system and user paths, then check the current path against them."""
         pass
+
+    def _is_dangerous(self) -> bool:
+        """Check if the path is dangerous based on current settings.
+
+        Returns:
+            (bool):
+                True if the path is dangerous considering all flags, False otherwise.
+        """
+        # Check system paths (unless allowed)
+        if self._is_system_path and not self._system_ok:
+            return True
+
+        # Check user paths (unless allowed)
+        if self._is_user_path and not self._user_paths_ok:
+            return True
+
+        # Check invalid characters (always dangerous)
+        if self._has_invalid_chars:
+            return True
+
+        # Check writeability
+        if not self._not_writeable:
+            # If not_writeable is False, non-writable existing paths are considered dangerous
+            if self._path_obj.exists() and not self.is_writable:
+                return True
+
+        return False
 
     def _check_against_paths(self, paths: list[str], path_obj: Path | None = None) -> bool:
         """Check if a path matches any in the given list.
@@ -425,7 +514,17 @@ class BasePathChecker(ABC):
             is_sys_path = self._check_against_paths(self._system_paths, path_obj)
             is_usr_path = self._check_against_paths(self._user_paths, path_obj)
 
-            is_dangerous = is_sys_path or is_usr_path or has_invalid
+            # Evaluate danger based on settings
+            is_dangerous = has_invalid  # Invalid chars are always dangerous
+            if is_sys_path and not self._system_ok:
+                is_dangerous = True
+            if is_usr_path and not self._user_paths_ok:
+                is_dangerous = True
+
+            # Check writeability
+            if not self._not_writeable:
+                if path_obj.exists() and not os.access(path_obj, os.W_OK):
+                    is_dangerous = True
 
             if is_dangerous and raise_error:
                 raise DangerousPathError(f"Path '{path}' points to a dangerous location")
@@ -434,7 +533,7 @@ class BasePathChecker(ABC):
         else:
             # Reload paths and check the original path
             self._load_and_check_paths()
-            is_dangerous = self._is_system_path or self._is_user_path or self._has_invalid_chars
+            is_dangerous = self._is_dangerous()
 
             if is_dangerous and raise_error:
                 raise DangerousPathError(f"Path '{self._path}' points to a dangerous location")
@@ -446,6 +545,8 @@ class BasePathChecker(ABC):
 
         A path is considered dangerous if it matches either a platform-specific
         system path, a user-defined sensitive path, or contains invalid characters.
+        The danger assessment can be modified by the system_ok, user_paths_ok, and
+        not_writeable flags.
 
         This allows the class to be used in boolean context.
 
@@ -458,7 +559,7 @@ class BasePathChecker(ABC):
             ...     print("Safe path!")
             Safe path!
         """
-        return not (self._is_system_path or self._is_user_path or self._has_invalid_chars)
+        return not self._is_dangerous()
 
     @property
     def is_system_path(self) -> bool:
@@ -571,7 +672,7 @@ class BasePathChecker(ABC):
             (str):
                 String representation showing path and safety status.
         """
-        is_safe = not (self._is_system_path or self._is_user_path or self._has_invalid_chars)
+        is_safe = not self._is_dangerous()
         status = "safe" if is_safe else "dangerous"
         return f"PathChecker('{self._path}', {status})"
 
@@ -715,7 +816,14 @@ class PosixPathChecker(BasePathChecker):
 
 
 # Factory function to create the appropriate PathChecker based on platform
-def _create_path_checker(path: str | Path, raise_error: bool = False) -> BasePathChecker:
+def _create_path_checker(
+    path: str | Path,
+    raise_error: bool = False,
+    mode: str | None = None,
+    system_ok: bool = False,
+    user_paths_ok: bool = False,
+    not_writeable: bool = False,
+) -> BasePathChecker:
     """Create a platform-specific PathChecker instance.
 
     Args:
@@ -726,6 +834,16 @@ def _create_path_checker(path: str | Path, raise_error: bool = False) -> BasePat
         raise_error (bool):
             If True, raise DangerousPathError if the path is dangerous.
             Defaults to False.
+        mode (str | None):
+            Validation mode: "read", "write", or None. Defaults to None.
+        system_ok (bool):
+            If True, allow paths within system directories. Defaults to False.
+        user_paths_ok (bool):
+            If True, allow paths within user-defined sensitive locations.
+            Defaults to False.
+        not_writeable (bool):
+            If True, allow paths that are readable but not writeable.
+            Defaults to False.
 
     Returns:
         (BasePathChecker):
@@ -734,14 +852,22 @@ def _create_path_checker(path: str | Path, raise_error: bool = False) -> BasePat
     Raises:
         DangerousPathError:
             If raise_error is True and the path is dangerous.
+        ValueError:
+            If mode is not None, "read", or "write".
     """
     match platform.system():
         case "Windows":
-            return WindowsPathChecker(path, raise_error)
+            return WindowsPathChecker(
+                path, raise_error, mode, system_ok, user_paths_ok, not_writeable
+            )
         case "Darwin":
-            return DarwinPathChecker(path, raise_error)
+            return DarwinPathChecker(
+                path, raise_error, mode, system_ok, user_paths_ok, not_writeable
+            )
         case _:  # Linux and other Unix-like systems
-            return PosixPathChecker(path, raise_error)
+            return PosixPathChecker(
+                path, raise_error, mode, system_ok, user_paths_ok, not_writeable
+            )
 
 
 # PathChecker is the public API - it's a callable class that acts as a factory
@@ -765,10 +891,34 @@ class PathChecker:
         raise_error (bool):
             If True, raise DangerousPathError if the path is dangerous.
             Defaults to False.
+        mode (str | None):
+            Validation mode for common use cases: "read", "write", or None.
+            Use "read" when validating paths for read operations (allows
+            reading from system directories and user-defined paths). Use
+            "write" when validating paths for write operations (strict
+            validation to prevent overwriting critical files). Use None
+            to manually control validation via individual flags. When
+            mode is specified, it overrides the system_ok, user_paths_ok,
+            and not_writeable flags. Defaults to None.
+        system_ok (bool):
+            If True, allow paths within system directories. Defaults to False.
+        user_paths_ok (bool):
+            If True, allow paths within user-defined sensitive locations.
+            Defaults to False.
+        not_writeable (bool):
+            If True, allow paths that are readable but not writeable.
+            Defaults to False.
 
     Raises:
         DangerousPathError:
             If raise_error is True and the path is dangerous.
+        ValueError:
+            If mode is not None, "read", or "write".
+
+    Notes:
+        When mode is specified, individual flag parameters (system_ok,
+        user_paths_ok, not_writeable) are ignored in favour of the mode's
+        preset values.
 
     Attributes:
         is_system_path (bool):
@@ -787,14 +937,40 @@ class PathChecker:
             The original path that was checked.
 
     Examples:
+        >>> # Default strict validation - dangerous for system paths
         >>> checker = PathChecker("/etc/passwd")  # doctest: +SKIP
         >>> if not checker:
         ...     print(f"Dangerous path! System path: {checker.is_system_path}")
-        ...     print(f"User-defined: {checker.is_sensitive_path}")
         Dangerous path! System path: True
-        User-defined: False
+        >>> # Read mode - convenient for validating read operations
+        >>> checker = PathChecker("/etc/passwd", mode="read")  # doctest: +SKIP
+        >>> if checker:
+        ...     print("Safe to read from this path!")
+        Safe to read from this path!
+        >>> # Write mode - strict validation to prevent overwriting critical files
+        >>> checker = PathChecker("/tmp/myfile.txt", mode="write")  # doctest: +SKIP
+        >>> if checker:
+        ...     print("Safe to write to this path!")
+        Safe to write to this path!
+        >>> # Manual flag control (backward compatible)
+        >>> checker = PathChecker(
+        ...     "/etc/passwd", system_ok=True, not_writeable=True
+        ... )  # doctest: +SKIP
+        >>> if checker:
+        ...     print("Safe with custom flags!")
+        Safe with custom flags!
     """
 
-    def __new__(cls, path: str | Path, raise_error: bool = False) -> BasePathChecker:
+    def __new__(
+        cls,
+        path: str | Path,
+        raise_error: bool = False,
+        mode: str | None = None,
+        system_ok: bool = False,
+        user_paths_ok: bool = False,
+        not_writeable: bool = False,
+    ) -> BasePathChecker:
         """Create a platform-specific PathChecker instance."""
-        return _create_path_checker(path, raise_error)
+        return _create_path_checker(
+            path, raise_error, mode, system_ok, user_paths_ok, not_writeable
+        )
