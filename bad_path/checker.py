@@ -850,11 +850,17 @@ def _create_path_checker(
     """
     match platform.system():
         case "Windows":
-            return WindowsPathChecker(path, raise_error, mode, system_ok, user_paths_ok, not_writeable)
+            return WindowsPathChecker(
+                path, raise_error, mode, system_ok, user_paths_ok, not_writeable
+            )
         case "Darwin":
-            return DarwinPathChecker(path, raise_error, mode, system_ok, user_paths_ok, not_writeable)
+            return DarwinPathChecker(
+                path, raise_error, mode, system_ok, user_paths_ok, not_writeable
+            )
         case _:  # Linux and other Unix-like systems
-            return PosixPathChecker(path, raise_error, mode, system_ok, user_paths_ok, not_writeable)
+            return PosixPathChecker(
+                path, raise_error, mode, system_ok, user_paths_ok, not_writeable
+            )
 
 
 # PathChecker is the public API - it's a callable class that acts as a factory
@@ -933,7 +939,9 @@ class PathChecker:
         ...     print("Safe to write to this path!")
         Safe to write to this path!
         >>> # Manual flag control (backward compatible)
-        >>> checker = PathChecker("/etc/passwd", system_ok=True, not_writeable=True)  # doctest: +SKIP
+        >>> checker = PathChecker(
+        ...     "/etc/passwd", system_ok=True, not_writeable=True
+        ... )  # doctest: +SKIP
         >>> if checker:
         ...     print("Safe with custom flags!")
         Safe with custom flags!
@@ -949,4 +957,6 @@ class PathChecker:
         not_writeable: bool = False,
     ) -> BasePathChecker:
         """Create a platform-specific PathChecker instance."""
-        return _create_path_checker(path, raise_error, mode, system_ok, user_paths_ok, not_writeable)
+        return _create_path_checker(
+            path, raise_error, mode, system_ok, user_paths_ok, not_writeable
+        )
