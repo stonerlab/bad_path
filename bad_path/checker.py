@@ -443,6 +443,14 @@ class BasePathChecker(ABC):
             if str(path_obj).lower() == str(cwd).lower():
                 return False  # Path is CWD itself (safe)
             
+            # On Windows, also try samefile() if paths exist
+            try:
+                if path_obj.exists() and cwd.exists() and path_obj.samefile(cwd):
+                    return False  # Same file/directory (safe)
+            except (OSError, ValueError, AttributeError):
+                # samefile() not available or failed, continue with relative_to
+                pass
+            
             # Try to express path_obj relative to cwd
             # If this succeeds, the path is within CWD
             path_obj.relative_to(cwd)
