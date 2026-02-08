@@ -265,6 +265,11 @@ class BasePathChecker(ABC):
         not_writeable (bool):
             If True, allow paths that are readable but not writeable.
             Defaults to False.
+        cwd_only (bool):
+            If True, only allow paths within the current working directory
+            to prevent path traversal attacks. Paths that resolve outside
+            the CWD (e.g., '../../../etc/passwd') are considered dangerous.
+            Defaults to False.
 
     Raises:
         DangerousPathError:
@@ -319,6 +324,7 @@ class BasePathChecker(ABC):
         system_ok: bool = False,
         user_paths_ok: bool = False,
         not_writeable: bool = False,
+        cwd_only: bool = False,
     ):
         """Initialise the PathChecker with a path to check."""
         self._path = path
@@ -346,6 +352,9 @@ class BasePathChecker(ABC):
             self._system_ok = system_ok
             self._user_paths_ok = user_paths_ok
             self._not_writeable = not_writeable
+
+        # Handle cwd_only flag (independent of mode)
+        self._cwd_only = cwd_only
 
         # Load platform-specific invalid characters first (before resolve)
         self._load_invalid_chars()
@@ -405,7 +414,34 @@ class BasePathChecker(ABC):
             if self._path_obj.exists() and not self.is_writable:
                 return True
 
+        # Check CWD restriction
+        if self._cwd_only and self._check_cwd_traversal():
+            return True
+
         return False
+
+    def _check_cwd_traversal(self, path_obj: Path | None = None) -> bool:
+        """Check if a path traverses outside the current working directory.
+
+        Keyword Parameters:
+            path_obj (Path | None):
+                Optional Path object to check. If not provided, uses self._path_obj.
+                Defaults to None.
+
+        Returns:
+            (bool):
+                True if the path is outside CWD (dangerous), False otherwise.
+        """
+        if path_obj is None:
+            path_obj = self._path_obj
+
+        try:
+            cwd = Path.cwd().resolve()
+            # Check if the resolved path is within CWD or its subdirectories
+            return cwd not in path_obj.parents and path_obj != cwd
+        except (OSError, ValueError):
+            # If resolution fails, treat as dangerous
+            return True
 
     def _check_against_paths(self, paths: list[str], path_obj: Path | None = None) -> bool:
         """Check if a path matches any in the given list.
@@ -525,6 +561,10 @@ class BasePathChecker(ABC):
             if not self._not_writeable:
                 if path_obj.exists() and not os.access(path_obj, os.W_OK):
                     is_dangerous = True
+
+            # Check CWD restriction
+            if self._cwd_only and self._check_cwd_traversal(path_obj):
+                is_dangerous = True
 
             if is_dangerous and raise_error:
                 raise DangerousPathError(f"Path '{path}' points to a dangerous location")
@@ -823,6 +863,7 @@ def _create_path_checker(
     system_ok: bool = False,
     user_paths_ok: bool = False,
     not_writeable: bool = False,
+    cwd_only: bool = False,
 ) -> BasePathChecker:
     """Create a platform-specific PathChecker instance.
 
@@ -844,6 +885,11 @@ def _create_path_checker(
         not_writeable (bool):
             If True, allow paths that are readable but not writeable.
             Defaults to False.
+        cwd_only (bool):
+            If True, only allow paths within the current working directory
+            to prevent path traversal attacks. Paths that resolve outside
+            the CWD (e.g., '../../../etc/passwd') are considered dangerous.
+            Defaults to False.
 
     Returns:
         (BasePathChecker):
@@ -858,15 +904,15 @@ def _create_path_checker(
     match platform.system():
         case "Windows":
             return WindowsPathChecker(
-                path, raise_error, mode, system_ok, user_paths_ok, not_writeable
+                path, raise_error, mode, system_ok, user_paths_ok, not_writeable, cwd_only
             )
         case "Darwin":
             return DarwinPathChecker(
-                path, raise_error, mode, system_ok, user_paths_ok, not_writeable
+                path, raise_error, mode, system_ok, user_paths_ok, not_writeable, cwd_only
             )
         case _:  # Linux and other Unix-like systems
             return PosixPathChecker(
-                path, raise_error, mode, system_ok, user_paths_ok, not_writeable
+                path, raise_error, mode, system_ok, user_paths_ok, not_writeable, cwd_only
             )
 
 
@@ -907,6 +953,11 @@ class PathChecker:
             Defaults to False.
         not_writeable (bool):
             If True, allow paths that are readable but not writeable.
+            Defaults to False.
+        cwd_only (bool):
+            If True, only allow paths within the current working directory
+            to prevent path traversal attacks. Paths that resolve outside
+            the CWD (e.g., '../../../etc/passwd') are considered dangerous.
             Defaults to False.
 
     Raises:
@@ -959,6 +1010,11 @@ class PathChecker:
         >>> if checker:
         ...     print("Safe with custom flags!")
         Safe with custom flags!
+        >>> # Path traversal protection
+        >>> checker = PathChecker("../../../etc/passwd", cwd_only=True)  # doctest: +SKIP
+        >>> if not checker:
+        ...     print("Dangerous: path traversal attempt detected!")
+        Dangerous: path traversal attempt detected!
     """
 
     def __new__(
@@ -969,8 +1025,9 @@ class PathChecker:
         system_ok: bool = False,
         user_paths_ok: bool = False,
         not_writeable: bool = False,
+        cwd_only: bool = False,
     ) -> BasePathChecker:
         """Create a platform-specific PathChecker instance."""
         return _create_path_checker(
-            path, raise_error, mode, system_ok, user_paths_ok, not_writeable
+            path, raise_error, mode, system_ok, user_paths_ok, not_writeable, cwd_only
         )
