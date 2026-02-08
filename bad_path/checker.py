@@ -249,26 +249,33 @@ class BasePathChecker(ABC):
             If True, raise DangerousPathError if the path is dangerous.
             Defaults to False.
         mode (str | None):
-            Validation mode: "read", "write", or None. When set to "read",
-            allows reading from system/user paths (sets system_ok=True,
-            user_paths_ok=True, not_writeable=True). When set to "write",
-            uses strict validation (default flags). When None, respects
-            individual flag values. Defaults to None.
+            Validation mode for common use cases: "read", "write", or None.
+            Use "read" when validating paths for read operations (allows
+            reading from system directories and user-defined paths). Use
+            "write" when validating paths for write operations (strict
+            validation to prevent overwriting critical files). Use None
+            to manually control validation via individual flags. When
+            mode is specified, it overrides the system_ok, user_paths_ok,
+            and not_writeable flags. Defaults to None.
         system_ok (bool):
             If True, allow paths within system directories. Defaults to False.
-            Ignored if mode is specified.
         user_paths_ok (bool):
             If True, allow paths within user-defined sensitive locations.
-            Defaults to False. Ignored if mode is specified.
+            Defaults to False.
         not_writeable (bool):
             If True, allow paths that are readable but not writeable.
-            Defaults to False. Ignored if mode is specified.
+            Defaults to False.
 
     Raises:
         DangerousPathError:
             If raise_error is True and the path is dangerous.
         ValueError:
             If mode is not None, "read", or "write".
+
+    Notes:
+        When mode is specified, individual flag parameters (system_ok,
+        user_paths_ok, not_writeable) are ignored in favour of the mode's
+        preset values.
 
     Attributes:
         is_system_path (bool):
@@ -886,25 +893,32 @@ class PathChecker:
             Defaults to False.
         mode (str | None):
             Validation mode for common use cases: "read", "write", or None.
-            When "read", allows reading from system/user paths (sets
-            system_ok=True, user_paths_ok=True, not_writeable=True).
-            When "write", uses strict validation (default flags).
-            When None, respects individual flag values. Defaults to None.
+            Use "read" when validating paths for read operations (allows
+            reading from system directories and user-defined paths). Use
+            "write" when validating paths for write operations (strict
+            validation to prevent overwriting critical files). Use None
+            to manually control validation via individual flags. When
+            mode is specified, it overrides the system_ok, user_paths_ok,
+            and not_writeable flags. Defaults to None.
         system_ok (bool):
             If True, allow paths within system directories. Defaults to False.
-            Ignored if mode is specified.
         user_paths_ok (bool):
             If True, allow paths within user-defined sensitive locations.
-            Defaults to False. Ignored if mode is specified.
+            Defaults to False.
         not_writeable (bool):
             If True, allow paths that are readable but not writeable.
-            Defaults to False. Ignored if mode is specified.
+            Defaults to False.
 
     Raises:
         DangerousPathError:
             If raise_error is True and the path is dangerous.
         ValueError:
             If mode is not None, "read", or "write".
+
+    Notes:
+        When mode is specified, individual flag parameters (system_ok,
+        user_paths_ok, not_writeable) are ignored in favour of the mode's
+        preset values.
 
     Attributes:
         is_system_path (bool):
