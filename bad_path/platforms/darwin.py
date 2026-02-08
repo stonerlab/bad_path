@@ -20,8 +20,20 @@ system_paths = common_paths + [
     "/System",
     "/Library",
     "/private/etc",  # System configuration (don't use /private to allow /private/tmp)
-    "/private/var",  # System variables, logs, and caches (excludes /private/tmp which is safe)
-    "/var",
+    # /private/var subdirectories (don't use /private/var to allow /private/var/folders for temp files)
+    "/private/var/root",  # Root user's home directory
+    "/private/var/db",  # System databases
+    "/private/var/log",  # System logs
+    "/private/var/audit",  # Audit logs
+    "/private/var/vm",  # Virtual memory swap
+    "/private/var/backups",  # System backups
+    # /var subdirectories (don't use /var to allow /var/folders for temp files)
+    "/var/root",  # Root user's home directory
+    "/var/db",  # System databases
+    "/var/log",  # System logs
+    "/var/audit",  # Audit logs
+    "/var/vm",  # Virtual memory swap
+    "/var/backups",  # System backups
     "/usr",
     "/Applications",
 ]
