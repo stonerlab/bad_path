@@ -10,7 +10,7 @@ from bad_path import DangerousPathError, is_dangerous_path
 
 def test_returns_bool_by_default():
     """Test that is_dangerous_path returns a bool by default."""
-    result = is_dangerous_path("/tmp/test.txt")
+    result = is_dangerous_path("/tmp/test.txt")  # nosec B108
     assert isinstance(result, bool)
 
 
@@ -34,7 +34,7 @@ def test_no_error_on_safe_path():
     if platform.system() == "Windows":
         safe_path = os.path.join(os.path.expanduser("~"), "Documents", "test.txt")
     else:
-        safe_path = "/tmp/test.txt"
+        safe_path = "/tmp/test.txt"  # nosec B108
 
     result = is_dangerous_path(safe_path, raise_error=True)
     assert result is False

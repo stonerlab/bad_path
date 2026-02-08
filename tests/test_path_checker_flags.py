@@ -150,7 +150,7 @@ def test_not_writeable_with_writable_file():
 
 def test_not_writeable_with_nonexistent_path():
     """Test that not_writeable flag doesn't affect non-existent paths."""
-    nonexistent = "/tmp/nonexistent_file_12345.txt"
+    nonexistent = "/tmp/nonexistent_file_12345.txt"  # nosec B108
 
     # Non-existent path should be safe (no write check applies)
     checker1 = PathChecker(nonexistent)
@@ -183,9 +183,9 @@ def test_invalid_chars_always_dangerous():
     if platform.system() == "Windows":
         test_path = "C:\\tmp\\test<file>.txt"
     elif platform.system() == "Darwin":
-        test_path = "/tmp/test:file.txt"
+        test_path = "/tmp/test:file.txt"  # nosec B108
     else:  # POSIX
-        test_path = "/tmp/test\x00file.txt"
+        test_path = "/tmp/test\x00file.txt"  # nosec B108
 
     # Invalid chars should be dangerous even with all flags enabled
     checker = PathChecker(
@@ -205,7 +205,7 @@ def test_call_method_respects_flags():
         dangerous_path = "/etc/passwd"
 
     # Create checker with system_ok=True and not_writeable=True
-    checker = PathChecker("/tmp/safe.txt", system_ok=True, not_writeable=True)
+    checker = PathChecker("/tmp/safe.txt", system_ok=True, not_writeable=True)  # nosec B108
 
     # Calling with a system path should return False (not dangerous) due to flags
     result = checker(dangerous_path)

@@ -18,7 +18,7 @@ def test_call_with_new_path_safe():
         safe_path = os.path.join(os.path.expanduser("~"), "Documents", "test.txt")
     else:
         dangerous_path = "/etc/passwd"
-        safe_path = "/tmp/test.txt"
+        safe_path = "/tmp/test.txt"  # nosec B108
 
     checker = PathChecker(dangerous_path)
     assert not checker  # Original path is dangerous (evaluates to False)
@@ -39,7 +39,7 @@ def test_call_with_new_path_dangerous():
         safe_path = os.path.join(os.path.expanduser("~"), "Documents", "test.txt")
         dangerous_path = "C:\\Windows\\System32\\test.txt"
     else:
-        safe_path = "/tmp/test.txt"
+        safe_path = "/tmp/test.txt"  # nosec B108
         dangerous_path = "/etc/passwd"
 
     checker = PathChecker(safe_path)
@@ -92,7 +92,7 @@ def test_call_with_path_does_not_reload():
     else:
         test_path = "/test/path"
         check_path = "/test/path/file.txt"
-        safe_path = "/tmp/safe.txt"
+        safe_path = "/tmp/safe.txt"  # nosec B108
 
     # Create checker with user paths empty
     checker = PathChecker(safe_path)
@@ -128,7 +128,7 @@ def test_call_with_pathlib_object():
         safe_path = Path(os.path.join(os.path.expanduser("~"), "Documents", "test.txt"))
     else:
         dangerous_path = "/etc/passwd"
-        safe_path = Path("/tmp/test.txt")
+        safe_path = Path("/tmp/test.txt")  # nosec B108
 
     checker = PathChecker(dangerous_path)
     result = checker(safe_path)
@@ -144,7 +144,7 @@ def test_call_preserves_original_state():
         safe_path = os.path.join(os.path.expanduser("~"), "Documents", "test.txt")
     else:
         dangerous_path = "/etc/passwd"
-        safe_path = "/tmp/test.txt"
+        safe_path = "/tmp/test.txt"  # nosec B108
 
     checker = PathChecker(dangerous_path)
     original_is_system = checker.is_system_path
@@ -201,7 +201,7 @@ def test_call_with_user_defined_path():
     else:
         custom_path = "/my/sensitive"
         test_file = f"{custom_path}/secret.txt"
-        safe_path = "/tmp/test.txt"
+        safe_path = "/tmp/test.txt"  # nosec B108
 
     # Add user path
     add_user_path(custom_path)
@@ -252,7 +252,7 @@ def test_constructor_raise_error_false_on_safe_path():
     if platform.system() == "Windows":
         safe_path = os.path.join(os.path.expanduser("~"), "Documents", "test.txt")
     else:
-        safe_path = "/tmp/test.txt"
+        safe_path = "/tmp/test.txt"  # nosec B108
 
     # Should not raise an exception
     checker = PathChecker(safe_path, raise_error=True)
@@ -267,7 +267,7 @@ def test_call_raise_error_on_dangerous_path():
         safe_path = os.path.join(os.path.expanduser("~"), "Documents", "test.txt")
         dangerous_path = "C:\\Windows\\System32\\test.txt"
     else:
-        safe_path = "/tmp/test.txt"
+        safe_path = "/tmp/test.txt"  # nosec B108
         dangerous_path = "/etc/passwd"
 
     # Create checker with safe path
@@ -313,7 +313,7 @@ def test_call_raise_error_false_on_safe_path():
     if system == "Windows":
         safe_path = os.path.join(os.path.expanduser("~"), "Documents", "test.txt")
     else:
-        safe_path = "/tmp/test.txt"
+        safe_path = "/tmp/test.txt"  # nosec B108
 
     # Create checker
     checker = PathChecker(safe_path)
@@ -345,7 +345,7 @@ def test_raise_error_default_false_in_call():
         safe_path = os.path.join(os.path.expanduser("~"), "Documents", "test.txt")
         dangerous_path = "C:\\Windows\\System32\\test.txt"
     else:
-        safe_path = "/tmp/test.txt"
+        safe_path = "/tmp/test.txt"  # nosec B108
         dangerous_path = "/etc/passwd"
 
     # Create checker with safe path

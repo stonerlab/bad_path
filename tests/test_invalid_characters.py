@@ -9,7 +9,7 @@ from bad_path import DangerousPathError, PathChecker, is_dangerous_path
 
 def test_has_invalid_chars_property_exists():
     """Test that PathChecker has a has_invalid_chars property."""
-    checker = PathChecker("/tmp/test.txt")
+    checker = PathChecker("/tmp/test.txt")  # nosec B108
     assert hasattr(checker, "has_invalid_chars")
     assert isinstance(checker.has_invalid_chars, bool)
 
@@ -19,7 +19,7 @@ def test_posix_safe_path_no_invalid_chars():
     if platform.system() == "Windows":
         pytest.skip("POSIX-specific test")
 
-    checker = PathChecker("/tmp/test_file.txt")
+    checker = PathChecker("/tmp/test_file.txt")  # nosec B108
     assert checker.has_invalid_chars is False
 
 
@@ -28,7 +28,7 @@ def test_posix_null_byte_is_invalid():
     if platform.system() == "Windows":
         pytest.skip("POSIX-specific test")
 
-    checker = PathChecker("/tmp/test\x00file.txt")
+    checker = PathChecker("/tmp/test\x00file.txt")  # nosec B108
     assert checker.has_invalid_chars is True
 
 
@@ -37,7 +37,7 @@ def test_darwin_colon_is_invalid():
     if platform.system() != "Darwin":
         pytest.skip("macOS-specific test")
 
-    checker = PathChecker("/tmp/test:file.txt")
+    checker = PathChecker("/tmp/test:file.txt")  # nosec B108
     assert checker.has_invalid_chars is True
 
 
@@ -46,7 +46,7 @@ def test_darwin_null_byte_is_invalid():
     if platform.system() != "Darwin":
         pytest.skip("macOS-specific test")
 
-    checker = PathChecker("/tmp/test\x00file.txt")
+    checker = PathChecker("/tmp/test\x00file.txt")  # nosec B108
     assert checker.has_invalid_chars is True
 
 
@@ -145,9 +145,9 @@ def test_invalid_chars_affects_bool():
     if platform.system() == "Windows":
         test_path = "C:\\tmp\\test<file>.txt"
     elif platform.system() == "Darwin":
-        test_path = "/tmp/test:file.txt"
+        test_path = "/tmp/test:file.txt"  # nosec B108
     else:  # POSIX
-        test_path = "/tmp/test\x00file.txt"
+        test_path = "/tmp/test\x00file.txt"  # nosec B108
 
     checker = PathChecker(test_path)
     # PathChecker evaluates to True when safe, False when dangerous
@@ -160,9 +160,9 @@ def test_invalid_chars_with_raise_error():
     if platform.system() == "Windows":
         test_path = "C:\\tmp\\test<file>.txt"
     elif platform.system() == "Darwin":
-        test_path = "/tmp/test:file.txt"
+        test_path = "/tmp/test:file.txt"  # nosec B108
     else:  # POSIX
-        test_path = "/tmp/test\x00file.txt"
+        test_path = "/tmp/test\x00file.txt"  # nosec B108
 
     with pytest.raises(DangerousPathError):
         PathChecker(test_path, raise_error=True)
@@ -170,14 +170,14 @@ def test_invalid_chars_with_raise_error():
 
 def test_call_with_invalid_chars_path():
     """Test that __call__ method detects invalid characters."""
-    checker = PathChecker("/tmp/safe.txt")
+    checker = PathChecker("/tmp/safe.txt")  # nosec B108
 
     if platform.system() == "Windows":
         test_path = "C:\\tmp\\test<file>.txt"
     elif platform.system() == "Darwin":
-        test_path = "/tmp/test:file.txt"
+        test_path = "/tmp/test:file.txt"  # nosec B108
     else:  # POSIX
-        test_path = "/tmp/test\x00file.txt"
+        test_path = "/tmp/test\x00file.txt"  # nosec B108
 
     # __call__ returns True if dangerous, False if safe
     result = checker(test_path)
@@ -186,14 +186,14 @@ def test_call_with_invalid_chars_path():
 
 def test_call_with_invalid_chars_and_raise_error():
     """Test that __call__ raises error for invalid characters when raise_error=True."""
-    checker = PathChecker("/tmp/safe.txt")
+    checker = PathChecker("/tmp/safe.txt")  # nosec B108
 
     if platform.system() == "Windows":
         test_path = "C:\\tmp\\test<file>.txt"
     elif platform.system() == "Darwin":
-        test_path = "/tmp/test:file.txt"
+        test_path = "/tmp/test:file.txt"  # nosec B108
     else:  # POSIX
-        test_path = "/tmp/test\x00file.txt"
+        test_path = "/tmp/test\x00file.txt"  # nosec B108
 
     with pytest.raises(DangerousPathError):
         checker(test_path, raise_error=True)
@@ -204,9 +204,9 @@ def test_is_dangerous_path_with_invalid_chars():
     if platform.system() == "Windows":
         test_path = "C:\\tmp\\test<file>.txt"
     elif platform.system() == "Darwin":
-        test_path = "/tmp/test:file.txt"
+        test_path = "/tmp/test:file.txt"  # nosec B108
     else:  # POSIX
-        test_path = "/tmp/test\x00file.txt"
+        test_path = "/tmp/test\x00file.txt"  # nosec B108
 
     result = is_dangerous_path(test_path)
     assert result is True
@@ -217,9 +217,9 @@ def test_repr_with_invalid_chars():
     if platform.system() == "Windows":
         test_path = "C:\\tmp\\test<file>.txt"
     elif platform.system() == "Darwin":
-        test_path = "/tmp/test:file.txt"
+        test_path = "/tmp/test:file.txt"  # nosec B108
     else:  # POSIX
-        test_path = "/tmp/test\x00file.txt"
+        test_path = "/tmp/test\x00file.txt"  # nosec B108
 
     checker = PathChecker(test_path)
     repr_str = repr(checker)
@@ -234,7 +234,7 @@ def test_safe_path_with_special_but_valid_chars():
         test_path = "C:\\tmp\\test_file-name.txt"
     else:
         # POSIX/Darwin allow most characters except null byte and colon (Darwin)
-        test_path = "/tmp/test_file-name@#$%^&().txt"
+        test_path = "/tmp/test_file-name@#$%^&().txt"  # nosec B108
 
     checker = PathChecker(test_path)
     assert checker.has_invalid_chars is False
