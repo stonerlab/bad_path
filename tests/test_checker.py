@@ -1227,11 +1227,11 @@ class TestPathCheckerFlags:
         # /etc/passwd is not writeable, so still dangerous without not_writeable=True
         if system != "Windows":
             assert not checker3  # Still dangerous on Unix (not writeable)
-        
+
         # system_ok + not_writeable - system path safe
         checker3b = PathChecker(system_path, system_ok=True, not_writeable=True)
         assert checker3b
-        
+
         checker4 = PathChecker(user_path, system_ok=True, not_writeable=True)
         assert not checker4  # User path still dangerous
 
@@ -1250,8 +1250,8 @@ class TestPathCheckerFlags:
     def test_not_writeable_allows_readonly_paths(self):
         """Test that not_writeable=True allows read-only paths."""
         # Create a temporary file and test with different permissions
-        import tempfile
         import stat
+        import tempfile
 
         with tempfile.NamedTemporaryFile(delete=False) as tmp:
             tmp_path = tmp.name
