@@ -79,6 +79,7 @@ print(f"Creatable: {checker.is_creatable}")
 - ✅ Object-oriented `PathChecker` class with detailed information
 - ✅ Path accessibility checks (read, write, create permissions)
 - ✅ **Invalid character detection** (platform-specific)
+- ✅ **Path traversal protection** (optional `cwd_only` flag)
 - ✅ Customizable error handling
 - ✅ Lightweight with no external dependencies
 - ✅ Works with both strings and `pathlib.Path` objects
@@ -189,6 +190,60 @@ print(f"Has invalid characters: {checker.has_invalid_chars}")  # True on Windows
 # Paths ending with space or period are invalid on Windows
 checker = PathChecker("C:\\tmp\\file. ")
 print(f"Has invalid characters: {checker.has_invalid_chars}")  # True on Windows
+```
+
+### Path Traversal Protection
+
+The `cwd_only` flag provides protection against path traversal attacks by restricting paths to the current working
+directory and its subdirectories. This is disabled by default to maintain backward compatibility.
+
+```python
+from bad_path import PathChecker
+
+# Enable path traversal protection
+checker = PathChecker("../../../etc/passwd", cwd_only=True)
+if not checker:
+    print("Blocked: Path traversal attempt detected!")
+
+# Paths outside CWD are blocked
+checker = PathChecker("/tmp/file.txt", cwd_only=True)
+if not checker:
+    print("Blocked: Path is outside current working directory!")
+
+# Paths within CWD and its subdirectories are allowed
+checker = PathChecker("./data/file.txt", cwd_only=True)
+if checker:
+    print("Safe: Path is within current working directory")
+
+# Works with raise_error for automatic exception handling
+from bad_path import DangerousPathError
+try:
+    checker = PathChecker("../../sensitive.txt", cwd_only=True, raise_error=True)
+except DangerousPathError as e:
+    print(f"Error: {e}")
+```
+
+Use cases for `cwd_only`:
+
+- Web applications handling user-provided file paths
+- CLI tools that should only operate on files in the current project
+- Sandboxed environments where file access should be restricted
+- Any scenario where you need to prevent directory traversal attacks
+
+```python
+# Example: Secure file handler for a web application
+def handle_user_file_request(user_path):
+    """Safely handle user-provided file paths."""
+    # Validate the path is within CWD to prevent traversal attacks
+    checker = PathChecker(user_path, cwd_only=True, raise_error=True)
+    
+    # Additional checks
+    if not checker.is_readable:
+        raise PermissionError("File is not readable")
+    
+    # Safe to proceed with file operations
+    with open(checker.path, 'r') as f:
+        return f.read()
 ```
 
 ## Documentation
