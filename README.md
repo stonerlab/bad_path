@@ -3,6 +3,10 @@
 [![Tests](https://github.com/gb119/bad_path/actions/workflows/tests.yml/badge.svg)](https://github.com/gb119/bad_path/actions/workflows/tests.yml)
 [![Documentation](https://github.com/gb119/bad_path/actions/workflows/docs.yml/badge.svg)](https://gb119.github.io/bad_path/)
 [![PyPI version](https://badge.fury.io/py/bad-path.svg)](https://badge.fury.io/py/bad-path)
+[![Anaconda Version](https://anaconda.org/phygbu/bad_path/badges/version.svg)](https://anaconda.org/phygbu/bad_path/badges/version.svg)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/68df7b8d1d044f17887b7d0df56b4aef)](https://app.codacy.com/gh/stonerlab/bad_path/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
+[![Platform](https://anaconda.org/phygbu/bad_path/badges/platforms.svg)](https://anaconda.org/phygbu/bad_path/badges/platforms.svg)
+[![License](https://anaconda.org/phygbu/bad_path/badges/license.svg)](https://anaconda.org/phygbu/bad_path/badges/license.svg)
 
 A Python package to identify potentially dangerous file paths.
 
