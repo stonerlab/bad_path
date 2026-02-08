@@ -12,13 +12,13 @@ from bad_path.checker import BasePathChecker
 
 def test_instantiation_with_string():
     """Test creating PathChecker with a string path."""
-    checker = PathChecker("/tmp/test.txt")
+    checker = PathChecker("/tmp/test.txt")  # nosec B108
     assert isinstance(checker, BasePathChecker)
 
 
 def test_instantiation_with_pathlib():
     """Test creating PathChecker with a Path object."""
-    checker = PathChecker(Path("/tmp/test.txt"))
+    checker = PathChecker(Path("/tmp/test.txt"))  # nosec B108
     assert isinstance(checker, BasePathChecker)
 
 
@@ -27,7 +27,7 @@ def test_bool_false_for_safe_path():
     if platform.system() == "Windows":
         safe_path = os.path.join(os.path.expanduser("~"), "Documents", "test.txt")
     else:
-        safe_path = "/tmp/test.txt"
+        safe_path = "/tmp/test.txt"  # nosec B108
 
     checker = PathChecker(safe_path)
     assert checker  # Should be True/truthy for safe paths
@@ -51,7 +51,7 @@ def test_is_system_path_property_safe():
     if platform.system() == "Windows":
         safe_path = os.path.join(os.path.expanduser("~"), "Documents", "test.txt")
     else:
-        safe_path = "/tmp/test.txt"
+        safe_path = "/tmp/test.txt"  # nosec B108
 
     checker = PathChecker(safe_path)
     assert checker.is_system_path is False
@@ -75,7 +75,7 @@ def test_is_sensitive_path_property_safe():
     if platform.system() == "Windows":
         safe_path = os.path.join(os.path.expanduser("~"), "Documents", "test.txt")
     else:
-        safe_path = "/tmp/test.txt"
+        safe_path = "/tmp/test.txt"  # nosec B108
 
     checker = PathChecker(safe_path)
     assert checker.is_sensitive_path is False
@@ -97,14 +97,14 @@ def test_is_sensitive_path_property_dangerous():
 
 def test_path_property():
     """Test that path property returns the original path."""
-    test_path = "/tmp/test.txt"
+    test_path = "/tmp/test.txt"  # nosec B108
     checker = PathChecker(test_path)
     assert checker.path == test_path
 
 
 def test_repr():
     """Test string representation of PathChecker."""
-    test_path = "/tmp/test.txt"
+    test_path = "/tmp/test.txt"  # nosec B108
     checker = PathChecker(test_path)
     repr_str = repr(checker)
     assert "PathChecker" in repr_str
@@ -117,7 +117,7 @@ def test_can_use_in_if_statement_safe():
     if platform.system() == "Windows":
         safe_path = os.path.join(os.path.expanduser("~"), "Documents", "test.txt")
     else:
-        safe_path = "/tmp/test.txt"
+        safe_path = "/tmp/test.txt"  # nosec B108
 
     checker = PathChecker(safe_path)
     if not checker:

@@ -115,7 +115,7 @@ def test_mode_none_respects_individual_flags():
 def test_mode_invalid_value_raises_error():
     """Test that invalid mode value raises ValueError."""
     with pytest.raises(ValueError) as exc_info:
-        PathChecker("/tmp/test.txt", mode="invalid")
+        PathChecker("/tmp/test.txt", mode="invalid")  # nosec B108
     assert "Invalid mode" in str(exc_info.value)
     assert "'invalid'" in str(exc_info.value)
 
@@ -142,7 +142,7 @@ def test_mode_overrides_individual_flags():
 
 def test_mode_read_with_safe_path():
     """Test that mode='read' works with safe paths too."""
-    safe_path = "/tmp/safe_file.txt"
+    safe_path = "/tmp/safe_file.txt"  # nosec B108
 
     checker = PathChecker(safe_path, mode="read")
     assert checker  # Safe path is safe in read mode
@@ -150,7 +150,7 @@ def test_mode_read_with_safe_path():
 
 def test_mode_write_with_safe_path():
     """Test that mode='write' works with safe paths."""
-    safe_path = "/tmp/safe_file.txt"
+    safe_path = "/tmp/safe_file.txt"  # nosec B108
 
     checker = PathChecker(safe_path, mode="write")
     assert checker  # Safe path is safe in write mode
@@ -189,9 +189,9 @@ def test_mode_read_invalid_chars_still_dangerous():
     if platform.system() == "Windows":
         invalid_path = "C:\\tmp\\test<file>.txt"
     elif platform.system() == "Darwin":
-        invalid_path = "/tmp/test:file.txt"
+        invalid_path = "/tmp/test:file.txt"  # nosec B108
     else:  # POSIX
-        invalid_path = "/tmp/test\x00file.txt"
+        invalid_path = "/tmp/test\x00file.txt"  # nosec B108
 
     # Invalid characters are always dangerous
     checker = PathChecker(invalid_path, mode="read")
@@ -203,10 +203,10 @@ def test_mode_case_sensitive():
     """Test that mode parameter is case-sensitive."""
     # Capital case should raise error
     with pytest.raises(ValueError):
-        PathChecker("/tmp/test.txt", mode="READ")
+        PathChecker("/tmp/test.txt", mode="READ")  # nosec B108
 
     with pytest.raises(ValueError):
-        PathChecker("/tmp/test.txt", mode="Write")
+        PathChecker("/tmp/test.txt", mode="Write")  # nosec B108
 
 
 if __name__ == "__main__":
