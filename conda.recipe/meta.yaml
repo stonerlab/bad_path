@@ -33,7 +33,7 @@ test:
     - pip
 
 about:
-  home: https://github.com/gb119/bad_path
+  home: https://github.com/stonerlab/bad_path
   license: MIT
   license_family: MIT
   license_file: LICENSE
@@ -41,8 +41,8 @@ about:
   description: |
     bad_path provides functions to test whether a supplied file path points to a
     system-sensitive location, taking into account different OS platforms.
-  doc_url: https://gb119.github.io/bad_path/
-  dev_url: https://github.com/gb119/bad_path
+  doc_url: https://stonerlab.github.io/bad_path/
+  dev_url: https://github.com/stonerlab/bad_path
 
 extra:
   recipe-maintainers:

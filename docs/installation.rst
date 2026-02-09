@@ -38,7 +38,7 @@ To install the latest development version from GitHub:
 
 .. code-block:: bash
 
-   git clone https://github.com/gb119/bad_path.git
+   git clone https://github.com/stonerlab/bad_path.git
    cd bad_path
    pip install -e .
 

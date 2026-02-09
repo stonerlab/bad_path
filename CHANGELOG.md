@@ -27,5 +27,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 73% test coverage with 90 tests
 - CI/CD workflows for testing, documentation, and package building
 
-[Unreleased]: https://github.com/gb119/bad_path/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/gb119/bad_path/releases/tag/v0.1.0
+[Unreleased]: https://github.com/stonerlab/bad_path/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/stonerlab/bad_path/releases/tag/v0.1.0
