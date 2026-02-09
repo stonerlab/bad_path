@@ -1,11 +1,11 @@
 {% set name = "bad_path" %}
 
 # Read version from package __init__.py
-{% set data = load_setup_py_data() %}
+{% set version = load_file_regex(load_file='../bad_path/__init__.py', regex_pattern='__version__\s*=\s*["\']([^"\']+)["\']') %}
 
 package:
   name: {{ name|lower }}
-  version: {{ environ.get('VERSION', '') }}
+  version: {{ version[1] }}
 
 source:
   path: ..
