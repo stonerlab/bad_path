@@ -386,12 +386,12 @@ class BasePathChecker(ABC):
     @abstractmethod
     def _load_invalid_chars(self) -> None:
         """Load platform-specific invalid characters and reserved names."""
-        pass
+        ...
 
     @abstractmethod
     def _load_and_check_paths(self) -> None:
         """Load system and user paths, then check the current path against them."""
-        pass
+        ...
 
     def _is_dangerous(self) -> bool:
         """Check if the path is dangerous based on current settings.
