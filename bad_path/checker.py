@@ -111,15 +111,15 @@ def get_dangerous_paths() -> list[str]:
     """
     match platform.system():
         case "Windows":
-            from .platforms.windows import (
+            from .platforms.windows.paths import (
                 system_paths,
             )  # pylint: disable=import-outside-toplevel
         case "Darwin":
-            from .platforms.darwin import (
+            from .platforms.darwin.paths import (
                 system_paths,
             )  # pylint: disable=import-outside-toplevel
         case _:  # Linux and other Unix-like systems
-            from .platforms.posix import (
+            from .platforms.posix.paths import (
                 system_paths,
             )  # pylint: disable=import-outside-toplevel
 
@@ -811,7 +811,7 @@ def _create_path_checker(
     """
     match platform.system():
         case "Windows":
-            from .platforms.checkers.windows import (  # pylint: disable=import-outside-toplevel
+            from .platforms.windows.checker import (  # pylint: disable=import-outside-toplevel
                 WindowsPathChecker,
             )
 
@@ -825,7 +825,7 @@ def _create_path_checker(
                 cwd_only,
             )
         case "Darwin":
-            from .platforms.checkers.darwin import (  # pylint: disable=import-outside-toplevel
+            from .platforms.darwin.checker import (  # pylint: disable=import-outside-toplevel
                 DarwinPathChecker,
             )
 
@@ -839,7 +839,7 @@ def _create_path_checker(
                 cwd_only,
             )
         case _:  # Linux and other Unix-like systems
-            from .platforms.checkers.posix import (  # pylint: disable=import-outside-toplevel
+            from .platforms.posix.checker import (  # pylint: disable=import-outside-toplevel
                 PosixPathChecker,
             )
 

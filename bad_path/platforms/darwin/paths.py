@@ -20,7 +20,8 @@ system_paths = common_paths + [
     "/System",
     "/Library",
     "/private/etc",  # System configuration (don't use /private to allow /private/tmp)
-    # /private/var subdirectories (don't use /private/var to allow /private/var/folders for temp files)
+    # /private/var subdirectories (don't use /private/var to allow
+    # /private/var/folders for temp files)
     "/private/var/root",  # Root user's home directory
     "/private/var/db",  # System databases
     "/private/var/log",  # System logs
@@ -43,5 +44,5 @@ system_paths = common_paths + [
 # The null byte (\0) and colon (:) are forbidden in file names.
 invalid_chars = [
     "\0",  # Null byte - strictly forbidden in POSIX
-    ":",   # Colon - problematic in macOS (was path separator in legacy Mac OS)
+    ":",  # Colon - problematic in macOS (was path separator in legacy Mac OS)
 ]

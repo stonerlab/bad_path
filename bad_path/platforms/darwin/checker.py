@@ -15,7 +15,7 @@ class DarwinPathChecker(BasePathChecker):
 
     def _load_invalid_chars(self) -> None:
         """Load Darwin-specific invalid characters."""
-        from ..darwin import (  # pylint: disable=import-outside-toplevel
+        from .paths import (  # pylint: disable=import-outside-toplevel
             invalid_chars,
         )
 
@@ -24,7 +24,7 @@ class DarwinPathChecker(BasePathChecker):
 
     def _load_and_check_paths(self) -> None:
         """Load system and user paths, then check the current path against them."""
-        from ..darwin import (  # pylint: disable=import-outside-toplevel
+        from .paths import (  # pylint: disable=import-outside-toplevel
             system_paths,
         )
 
