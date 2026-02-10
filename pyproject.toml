@@ -31,6 +31,7 @@ dependencies = []
 dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
+    "coveralls>=3.0",
     "sphinx>=7.0",
     "sphinx-better-theme>=0.1.5",
     "ruff>=0.1.0",

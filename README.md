@@ -1,6 +1,8 @@
 # bad_path
 
 [![Tests](https://github.com/stonerlab/bad_path/actions/workflows/tests.yml/badge.svg)](https://github.com/stonerlab/bad_path/actions/workflows/tests.yml)
+[![Coverage Status](https://coveralls.io/repos/github/stonerlab/bad_path/badge.svg?branch=main)](https://coveralls.io/github/stonerlab/bad_path?branch=main)
+[![Codacy coverage](https://app.codacy.com/project/badge/Coverage/68df7b8d1d044f17887b7d0df56b4aef)](https://app.codacy.com/gh/stonerlab/bad_path/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage)
 [![Documentation](https://github.com/stonerlab/bad_path/actions/workflows/docs.yml/badge.svg)](https://stonerlab.github.io/bad_path/)
 [![PyPI version](https://badge.fury.io/py/bad-path.svg)](https://badge.fury.io/py/bad-path)
 [![Anaconda Version](https://anaconda.org/phygbu/bad_path/badges/version.svg)](https://anaconda.org/phygbu/bad_path/badges/version.svg)
