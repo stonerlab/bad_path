@@ -6,7 +6,7 @@ includes platform-specific checkers for Windows, macOS (Darwin), and POSIX syste
 along with support for user-defined sensitive paths.
 """
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 from .checker import (
     DangerousPathError,
