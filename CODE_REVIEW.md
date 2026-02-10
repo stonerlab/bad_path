@@ -100,7 +100,8 @@ No high-priority issues found.
 - **Current**: 73% coverage (merged from all platforms via Coveralls and Codacy)
 - **Target**: 85%+ coverage
 - **Recommendation**: Add more unit tests for error handling code paths
-- **Note**: Platform-specific code (Windows, Darwin) is now properly tracked via multi-platform coverage merging with Coveralls and Codacy
+- **Note**: Platform-specific code (Windows, Darwin) is now properly tracked via multi-platform
+  coverage merging with Coveralls and Codacy
 
 ---
 
@@ -145,7 +146,8 @@ No high-priority issues found.
 - `bad_path/platforms/darwin.py`: Coverage tracked on macOS CI
 - `bad_path/platforms/windows.py`: Coverage tracked on Windows CI
 
-**Note**: With Coveralls and Codacy integration, platform-specific code coverage is now properly tracked and merged from all CI platforms (Linux, Windows, macOS).
+**Note**: With Coveralls and Codacy integration, platform-specific code coverage is now properly
+tracked and merged from all CI platforms (Linux, Windows, macOS).
 
 ### Missing Test Coverage
 
