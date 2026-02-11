@@ -8,11 +8,12 @@ dynamic = ["version"]
 description = "A Python package to identify potentially dangerous file paths"
 readme = "README.md"
 authors = [
-    {name = "Gavin Burnell", email = "g.burnell@example.com"}
+    {name = "Gavin Burnell", email = "g.burnell@leeds.ac.uk"}
 ]
-license = {file = "LICENSE"}
+license = "MIT"
+license-files = ["LICENSE"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 3 - Beta",
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
