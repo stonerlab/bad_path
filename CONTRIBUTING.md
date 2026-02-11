@@ -26,7 +26,16 @@ contributors.
    pip install -e ".[dev]"
    ```
 
-4. Create a branch for your changes:
+4. Install pre-commit hooks:
+
+   ```bash
+   pre-commit install
+   ```
+
+   This will automatically run black (Python formatter with line-length=119) and markdownlint
+   before each commit.
+
+5. Create a branch for your changes:
 
    ```bash
    git checkout -b feature/your-feature-name
@@ -50,16 +59,28 @@ pytest --cov=bad_path --cov-report=term-missing
 
 ### Code Quality
 
+Format code with black (line-length=119):
+
+```bash
+black .
+```
+
 Check code with ruff:
 
 ```bash
 ruff check .
 ```
 
-Format code (if needed):
+Format code with ruff (if needed):
 
 ```bash
 ruff format .
+```
+
+Run pre-commit hooks manually on all files:
+
+```bash
+pre-commit run --all-files
 ```
 
 ### Building Documentation
@@ -79,8 +100,9 @@ The built documentation will be in `docs/_build/html/`.
 
 - Follow PEP 8 style guide
 - Use Python 3.10+ features (type unions with |, match/case statements)
-- Line length: 100 characters (configured in pyproject.toml)
-- Use ruff for linting and formatting
+- Line length: 119 characters for black formatting, 100 characters for ruff
+- Use black for automatic code formatting
+- Use ruff for linting and additional formatting
 
 ### Docstrings
 
@@ -116,6 +138,7 @@ The built documentation will be in `docs/_build/html/`.
 3. **Test Your Changes**:
    - Run the full test suite
    - Check code quality with ruff
+   - Format code with black (or run pre-commit hooks)
    - Build documentation to check for errors
    - Test on multiple platforms if possible
 
